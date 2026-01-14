@@ -18,13 +18,12 @@ RUN dotnet publish "KuizServer.csproj" -c Release -o /app/publish /p:UseAppHost=
 # Runtime stage
 FROM mcr.microsoft.com/dotnet/aspnet:8.0 AS final
 WORKDIR /app
-EXPOSE 8080
 
 # Copy published output
 COPY --from=publish /app/publish .
 
-# Set environment variables
-ENV ASPNETCORE_URLS=http://+:8080
+# Set environment to Production (PORT will be set by Railway)
 ENV ASPNETCORE_ENVIRONMENT=Production
 
 ENTRYPOINT ["dotnet", "KuizServer.dll"]
+
