@@ -193,6 +193,9 @@ namespace Kuiz
             // Stop all sounds
             _soundService.StopAll();
             
+            // Disconnect SignalR client
+            _ = _signalRClient.DisconnectAsync();
+            
             var myName = _profileService.PlayerName ?? TxtJoinPlayerName.Text.Trim();
             
             // Remove player from lobby
@@ -268,6 +271,9 @@ namespace Kuiz
             _pollStateCts?.Dispose();
             _pollStateCts = null;
             
+            // Disconnect SignalR client
+            await _signalRClient.DisconnectAsync();
+            
             var myName = _profileService.PlayerName ?? TxtJoinPlayerName.Text.Trim();
             
             // Remove player from lobby
@@ -316,6 +322,9 @@ namespace Kuiz
             _pollStateCts?.Cancel();
             _pollStateCts?.Dispose();
             _pollStateCts = null;
+
+            // Disconnect SignalR client
+            await _signalRClient.DisconnectAsync();
 
             // Stop host service if running (with timeout)
             try
@@ -428,6 +437,9 @@ namespace Kuiz
             _pollStateCts?.Dispose();
             _pollStateCts = null;
 
+            // Disconnect SignalR client
+            await _signalRClient.DisconnectAsync();
+
             // Show loading overlay
             TxtLoadingMessage.Text = "ロビーから退出中...";
             LoadingOverlay.Visibility = Visibility.Visible;
@@ -501,6 +513,9 @@ namespace Kuiz
 
         private void BtnInfo_Click(object sender, RoutedEventArgs e)
         {
+            // バージョン情報を AppVersion.cs から取得して表示
+            TxtInfoVersion.Text = $"v{AppVersion.Version}";
+            
             InfoOverlay.Visibility = Visibility.Visible;
             InfoOverlay.IsHitTestVisible = true;
             AnimateConfirmOverlayOpen(InfoBorder);

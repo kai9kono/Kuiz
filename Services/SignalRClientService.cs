@@ -10,19 +10,10 @@ namespace Kuiz.Services
     /// </summary>
     public class SignalRClientService
     {
-        // Railway.appのURL
-        // 開発環境: http://localhost:8080
-        // 本番環境: https://kuiz-production.up.railway.app
-#if DEBUG
-        private const string ServerUrl = "http://localhost:8080"; // 開発環境
-#else
-        private const string ServerUrl = "https://kuiz-production.up.railway.app"; // 本番環境
-#endif
-
-
         private HubConnection? _connection;
         private string _playerName = string.Empty;
         private string _lobbyCode = string.Empty;
+        private string _serverUrl = string.Empty;
 
         public bool IsConnected => _connection?.State == HubConnectionState.Connected;
 
@@ -34,16 +25,23 @@ namespace Kuiz.Services
         public event Action<object>? OnGameStateUpdated;
         public event Action<object>? OnGameEnded;
 
-        public async Task<bool> ConnectAsync(string lobbyCode, string playerName)
+        public async Task<bool> ConnectAsync(string serverUrl, string lobbyCode, string playerName)
         {
             try
             {
                 _playerName = playerName;
                 _lobbyCode = lobbyCode;
+                _serverUrl = serverUrl;
+
+                // Ensure server URL doesn't end with /
+                if (_serverUrl.EndsWith('/'))
+                    _serverUrl = _serverUrl.TrimEnd('/');
+
+                Logger.LogInfo($"Connecting to server: {_serverUrl}/gamehub");
 
                 // SignalR接続を構築
                 _connection = new HubConnectionBuilder()
-                    .WithUrl($"{ServerUrl}/gamehub")
+                    .WithUrl($"{_serverUrl}/gamehub")
                     .WithAutomaticReconnect()
                     .Build();
 

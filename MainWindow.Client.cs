@@ -35,101 +35,92 @@ namespace Kuiz
 
             TxtJoinStatus.Text = "接続中...";
 
-            // Try localhost:5000 as default host URL
-            var hostUrl = "http://localhost:5000/";
-            var reg = new { name, lobbyCode, version = AppVersion.Version };
-            var content = new StringContent(JsonSerializer.Serialize(reg), Encoding.UTF8, "application/json");
+            // Always use Railway server
+            var serverUrl = _appConfig.Config.ServerUrl;
+            
+            Logger.LogInfo($"Attempting to connect to server: {serverUrl}");
 
             try
             {
-                var res = await _httpClient.PostAsync(new Uri(new Uri(hostUrl), "/register"), content);
+                // Use SignalR client to connect
+                var success = await _signalRClient.ConnectAsync(serverUrl, lobbyCode, name);
 
-                if (res.IsSuccessStatusCode)
+                if (success)
                 {
                     TxtJoinStatus.Text = "ロビーに参加しました！";
                     _profileService.Save(name);
+                    
+                    // Setup SignalR event handlers
+                    SetupSignalRClientHandlers();
+                    
                     ShowPanel(GamePanel);
-                    
-                    // Cancel any existing poll loop
-                    _pollStateCts?.Cancel();
-                    _pollStateCts?.Dispose();
-                    
-                    // Start new poll loop
-                    _pollStateCts = new CancellationTokenSource();
-                    _ = PollStateLoopAsync(hostUrl, _pollStateCts.Token);
-                }
-                else if (res.StatusCode == System.Net.HttpStatusCode.BadRequest)
-                {
-                    var errorJson = await res.Content.ReadAsStringAsync();
-                    try
-                    {
-                        var errorObj = JsonSerializer.Deserialize<JsonElement>(errorJson);
-                        if (errorObj.TryGetProperty("error", out var errorMsg))
-                        {
-                            var msg = errorMsg.GetString();
-                            if (msg == "Version mismatch")
-                            {
-                                TxtJoinStatus.Text = "バージョンが一致しません。アプリを更新してください";
-                            }
-                            else
-                            {
-                                TxtJoinStatus.Text = "参加できませんでした";
-                            }
-                        }
-                        else
-                        {
-                            TxtJoinStatus.Text = "参加できませんでした";
-                        }
-                    }
-                    catch
-                    {
-                        TxtJoinStatus.Text = "参加できませんでした";
-                    }
-                }
-                else if (res.StatusCode == System.Net.HttpStatusCode.Forbidden)
-                {
-                    TxtJoinStatus.Text = "ロビーコードが正しくありません";
-                }
-                else if (res.StatusCode == System.Net.HttpStatusCode.Conflict)
-                {
-                    var errorJson = await res.Content.ReadAsStringAsync();
-                    try
-                    {
-                        var errorObj = JsonSerializer.Deserialize<JsonElement>(errorJson);
-                        if (errorObj.TryGetProperty("error", out var errorMsg))
-                        {
-                            var msg = errorMsg.GetString();
-                            if (msg == "Lobby is full")
-                            {
-                                TxtJoinStatus.Text = "ロビーが満員です（最大4人）";
-                            }
-                            else
-                            {
-                                TxtJoinStatus.Text = "参加できませんでした";
-                            }
-                        }
-                        else
-                        {
-                            TxtJoinStatus.Text = "参加できませんでした";
-                        }
-                    }
-                    catch
-                    {
-                        TxtJoinStatus.Text = "参加できませんでした";
-                    }
                 }
                 else
                 {
-                    TxtJoinStatus.Text = "接続に失敗しました";
+                    TxtJoinStatus.Text = "ロビーへの参加に失敗しました";
                 }
             }
             catch (Exception ex)
             {
-                TxtJoinStatus.Text = "エラー: ホストに接続できません";
+                TxtJoinStatus.Text = "エラー: サーバーに接続できません";
                 Logger.LogError(ex);
             }
         }
 
+        private void SetupSignalRClientHandlers()
+        {
+            _signalRClient.OnGameStateUpdated += (state) =>
+            {
+                Dispatcher.Invoke(() =>
+                {
+                    // ゲーム状態の更新処理
+                    Logger.LogInfo("Game state updated via SignalR");
+                });
+            };
+
+            _signalRClient.OnPlayerJoined += (playerName) =>
+            {
+                Dispatcher.Invoke(() =>
+                {
+                    Logger.LogInfo($"Player joined: {playerName}");
+                });
+            };
+
+            _signalRClient.OnPlayerLeft += (playerName) =>
+            {
+                Dispatcher.Invoke(() =>
+                {
+                    Logger.LogInfo($"Player left: {playerName}");
+                });
+            };
+
+            _signalRClient.OnPlayerBuzzed += (playerName) =>
+            {
+                Dispatcher.Invoke(() =>
+                {
+                    Logger.LogInfo($"Player buzzed: {playerName}");
+                });
+            };
+
+            _signalRClient.OnGameStarting += (settings) =>
+            {
+                Dispatcher.Invoke(() =>
+                {
+                    Logger.LogInfo("Game starting");
+                });
+            };
+
+            _signalRClient.OnGameEnded += (results) =>
+            {
+                Dispatcher.Invoke(() =>
+                {
+                    Logger.LogInfo("Game ended");
+                });
+            };
+        }
+
+        // Legacy HTTP polling - replaced by SignalR
+        /*
         private async Task PollStateLoopAsync(string hostUrl, CancellationToken cancellationToken)
         {
             while (!cancellationToken.IsCancellationRequested)
@@ -228,5 +219,6 @@ namespace Kuiz
 
             UpdateBuzzButtonState();
         }
+        */
     }
 }

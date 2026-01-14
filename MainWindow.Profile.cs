@@ -98,21 +98,21 @@ namespace Kuiz
                     {
                         UpdateLobbyUi();
                         UpdateGameUi();
-                    });
-                }
+                });
             }
-
-            AnimateProfileDialogClose();
         }
 
-        private void BtnCancelProfile_Click(object sender, RoutedEventArgs e)
-        {
-            // Revert theme to saved state if user cancels
-            _themeService.SetTheme(_profileService.IsDarkMode);
-            UpdateDarkModeButton();
-            
-            AnimateProfileDialogClose();
-        }
+        AnimateProfileDialogClose();
+    }
+
+    private void BtnCancelProfile_Click(object sender, RoutedEventArgs e)
+    {
+        // Revert theme to saved state if user cancels
+        _themeService.SetTheme(_profileService.IsDarkMode);
+        UpdateDarkModeButton();
+        
+        AnimateProfileDialogClose();
+    }
         
         private void BtnToggleDarkMode_Click(object sender, RoutedEventArgs e)
         {
@@ -207,12 +207,12 @@ namespace Kuiz
             // No longer used
         }
         
-        private void ToggleDarkMode_Unchecked(object sender, RoutedEventArgs e)
-        {
-            // No longer used
-        }
-        
-        private void AnimateProfileDialogOpen()
+    private void ToggleDarkMode_Unchecked(object sender, RoutedEventArgs e)
+    {
+        // No longer used
+    }
+    
+    private void AnimateProfileDialogOpen()
         {
             var storyboard = new Storyboard();
             

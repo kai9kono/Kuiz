@@ -1522,7 +1522,7 @@
                         <StackPanel Orientation="Horizontal" Margin="0,0,0,20">
                             <pack:PackIcon Kind="TagText" Width="28" Height="28" Foreground="{Binding AccentColor}" VerticalAlignment="Center" Margin="0,0,16,0" />
                             <TextBlock Text="バージョン" FontSize="18" FontWeight="SemiBold" Foreground="{Binding SecondaryTextColor}" VerticalAlignment="Center" Width="140" />
-                            <TextBlock Text="V1.0.0" FontSize="18" Foreground="{Binding ForegroundColor}" VerticalAlignment="Center" />
+                            <TextBlock x:Name="TxtInfoVersion" FontSize="18" Foreground="{Binding ForegroundColor}" VerticalAlignment="Center" />
                         </StackPanel>
                         
                         <StackPanel Orientation="Horizontal" Margin="0,0,0,20">

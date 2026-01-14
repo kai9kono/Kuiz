@@ -29,6 +29,8 @@ namespace Kuiz
         private readonly ThemeService _themeService = ThemeService.Instance;
         private readonly SoundService _soundService = SoundService.Instance;
         private readonly PlayerStatsService _playerStatsService = new();
+        private readonly AppConfigService _appConfig = new();
+        private readonly SignalRClientService _signalRClient = new();
 
         public event PropertyChangedEventHandler? PropertyChanged;
 
@@ -56,6 +58,10 @@ namespace Kuiz
 
             // プレイヤー名をテキストボックスに設定（デフォルト：ちびすけ明太子）
             TxtJoinPlayerName.Text = _profileService.PlayerName ?? "ちびすけ明太子";
+            
+            // Load server configuration
+            _appConfig.Load();
+            Logger.LogInfo($"🌐 Server URL: {_appConfig.Config.ServerUrl}");
             
             // Apply saved theme using ThemeService
 

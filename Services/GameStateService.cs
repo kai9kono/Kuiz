@@ -127,25 +127,61 @@ namespace Kuiz.Services
             return true;
         }
 
+        /// <summary>
+        /// 全角半角・大文字小文字を正規化
+        /// </summary>
+        private string NormalizeAnswer(string text)
+        {
+            if (string.IsNullOrEmpty(text)) return "";
+            
+            var normalized = text.Trim();
+            
+            // 全角英数字を半角に変換
+            var sb = new System.Text.StringBuilder();
+            foreach (char c in normalized)
+            {
+                // 全角英大文字 (Ａ-Ｚ) → 半角小文字 (a-z)
+                if (c >= '０' && c <= '９')
+                {
+                    sb.Append((char)(c - '０' + '0'));
+                }
+                else if (c >= 'Ａ' && c <= 'Ｚ')
+                {
+                    sb.Append((char)(c - 'Ａ' + 'a'));
+                }
+                else if (c >= 'ａ' && c <= 'ｚ')
+                {
+                    sb.Append((char)(c - 'ａ' + 'a'));
+                }
+                else if (c >= 'A' && c <= 'Z')
+                {
+                    sb.Append((char)(c - 'A' + 'a'));
+                }
+                else
+                {
+                    sb.Append(char.ToLower(c));
+                }
+            }
+            
+            return sb.ToString();
+        }
+
         public bool ProcessAnswer(string playerName, string answer)
         {
             if (CurrentQuestion == null) return false;
 
-            // FuzzySharpで類似度判定（閾値85%）
-            var correctAnswer = CurrentQuestion.Answer?.Trim() ?? "";
-            var userAnswer = answer.Trim();
+            // 全角半角・大文字小文字を正規化
+            var correctAnswer = NormalizeAnswer(CurrentQuestion.Answer ?? "");
+            var userAnswer = NormalizeAnswer(answer);
             
-            // まず完全一致を確認（大文字小文字を無視）
-            bool correct = string.Equals(
-                correctAnswer,
-                userAnswer,
-                StringComparison.OrdinalIgnoreCase);
+            // まず完全一致を確認（正規化後）
+            bool correct = correctAnswer == userAnswer;
             
             // 完全一致しない場合はファジーマッチング
             if (!correct && !string.IsNullOrEmpty(correctAnswer))
             {
-                int similarity = Fuzz.Ratio(correctAnswer.ToLower(), userAnswer.ToLower());
-                Logger.LogInfo($"Answer fuzzy match: '{userAnswer}' vs '{correctAnswer}' = {similarity}%");
+                int similarity = Fuzz.Ratio(correctAnswer, userAnswer);
+                Logger.LogInfo($"Answer fuzzy match: '{answer}' -> '{userAnswer}' vs '{CurrentQuestion.Answer}' -> '{correctAnswer}' = {similarity}%");
                 
                 // 85%以上の類似度で正解と判定
                 correct = similarity >= 85;

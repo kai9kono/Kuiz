@@ -67,10 +67,14 @@ namespace Kuiz.Services
     public class AppConfig
     {
         /// <summary>
-        /// Railway APIのURL（デフォルト: 本番環境）
-        /// ローカル開発時は "http://localhost:8080/api/question" に変更可能
+        /// Railway APIのURL（固定: 本番環境）
         /// </summary>
         public string ApiUrl { get; set; } = "https://kuiz-production.up.railway.app/api/question";
+
+        /// <summary>
+        /// ゲームサーバーのベースURL（固定: Railway本番環境）
+        /// </summary>
+        public string ServerUrl { get; set; } = "https://kuiz-production.up.railway.app";
 
         /// <summary>
         /// デバッグモード
