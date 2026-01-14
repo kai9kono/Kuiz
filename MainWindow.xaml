@@ -471,7 +471,7 @@
 
                         <StackPanel Margin="0,0,0,16">
                             <TextBlock Text="勝利正解数" FontSize="14" Foreground="{Binding SecondaryTextColor}" Margin="0,0,0,8" HorizontalAlignment="Center" />
-                            <Grid HorizontalAlignment="Center" Width="220">
+                            <Grid HorizontalAlignment="Center" Width="260">
                                 <Grid.ColumnDefinitions>
                                     <ColumnDefinition Width="Auto" />
                                     <ColumnDefinition Width="*" />
@@ -481,8 +481,10 @@
                                         Style="{StaticResource SoundFlatButton}"
                                         Click="BtnDecreasePointsToWin_Click"
                                         Foreground="{Binding ForegroundColor}"
+                                        HorizontalContentAlignment="Center"
+                                        VerticalContentAlignment="Center"
                                         ToolTip="減らす">
-                                    <pack:PackIcon Kind="ChevronLeft" Width="28" Height="28" />
+                                    <pack:PackIcon Kind="ChevronLeft" Width="28" Height="28" HorizontalAlignment="Center" VerticalAlignment="Center" />
                                 </Button>
                                 <TextBox x:Name="TxtPointsToWin" Grid.Column="1" Text="5" 
                                          Style="{StaticResource NumericThemedTextBox}"
@@ -498,15 +500,17 @@
                                         Style="{StaticResource SoundFlatButton}"
                                         Click="BtnIncreasePointsToWin_Click"
                                         Foreground="{Binding ForegroundColor}"
+                                        HorizontalContentAlignment="Center"
+                                        VerticalContentAlignment="Center"
                                         ToolTip="増やす">
-                                    <pack:PackIcon Kind="ChevronRight" Width="28" Height="28" />
+                                    <pack:PackIcon Kind="ChevronRight" Width="28" Height="28" HorizontalAlignment="Center" VerticalAlignment="Center" />
                                 </Button>
                             </Grid>
                         </StackPanel>
 
                         <StackPanel Margin="0,0,0,16">
                             <TextBlock Text="最大誤答数" FontSize="14" Foreground="{Binding SecondaryTextColor}" Margin="0,0,0,8" HorizontalAlignment="Center" />
-                            <Grid HorizontalAlignment="Center" Width="220">
+                            <Grid HorizontalAlignment="Center" Width="260">
                                 <Grid.ColumnDefinitions>
                                     <ColumnDefinition Width="Auto" />
                                     <ColumnDefinition Width="*" />
@@ -516,8 +520,10 @@
                                         Style="{StaticResource SoundFlatButton}"
                                         Click="BtnDecreaseMaxMistakes_Click"
                                         Foreground="{Binding ForegroundColor}"
+                                        HorizontalContentAlignment="Center"
+                                        VerticalContentAlignment="Center"
                                         ToolTip="減らす">
-                                    <pack:PackIcon Kind="ChevronLeft" Width="28" Height="28" />
+                                    <pack:PackIcon Kind="ChevronLeft" Width="28" Height="28" HorizontalAlignment="Center" VerticalAlignment="Center" />
                                 </Button>
                                 <TextBox x:Name="TxtMaxMistakes" Grid.Column="1" Text="3" 
                                          Style="{StaticResource NumericThemedTextBox}"
@@ -533,15 +539,17 @@
                                         Style="{StaticResource SoundFlatButton}"
                                         Click="BtnIncreaseMaxMistakes_Click"
                                         Foreground="{Binding ForegroundColor}"
+                                        HorizontalContentAlignment="Center"
+                                        VerticalContentAlignment="Center"
                                         ToolTip="増やす">
-                                    <pack:PackIcon Kind="ChevronRight" Width="28" Height="28" />
+                                    <pack:PackIcon Kind="ChevronRight" Width="28" Height="28" HorizontalAlignment="Center" VerticalAlignment="Center" />
                                 </Button>
                             </Grid>
                         </StackPanel>
 
                         <StackPanel>
                             <TextBlock Text="問題数" FontSize="14" Foreground="{Binding SecondaryTextColor}" Margin="0,0,0,8" HorizontalAlignment="Center" />
-                            <Grid HorizontalAlignment="Center" Width="220">
+                            <Grid HorizontalAlignment="Center" Width="260">
                                 <Grid.ColumnDefinitions>
                                     <ColumnDefinition Width="Auto" />
                                     <ColumnDefinition Width="*" />
@@ -551,8 +559,10 @@
                                         Style="{StaticResource SoundFlatButton}"
                                         Click="BtnDecreaseNumQuestions_Click"
                                         Foreground="{Binding ForegroundColor}"
+                                        HorizontalContentAlignment="Center"
+                                        VerticalContentAlignment="Center"
                                         ToolTip="減らす">
-                                    <pack:PackIcon Kind="ChevronLeft" Width="28" Height="28" />
+                                    <pack:PackIcon Kind="ChevronLeft" Width="28" Height="28" HorizontalAlignment="Center" VerticalAlignment="Center" />
                                 </Button>
                                 <TextBox x:Name="TxtNumQuestions" Grid.Column="1" Text="10" 
                                          Style="{StaticResource NumericThemedTextBox}"
@@ -568,8 +578,10 @@
                                         Style="{StaticResource SoundFlatButton}"
                                         Click="BtnIncreaseNumQuestions_Click"
                                         Foreground="{Binding ForegroundColor}"
+                                        HorizontalContentAlignment="Center"
+                                        VerticalContentAlignment="Center"
                                         ToolTip="増やす">
-                                    <pack:PackIcon Kind="ChevronRight" Width="28" Height="28" />
+                                    <pack:PackIcon Kind="ChevronRight" Width="28" Height="28" HorizontalAlignment="Center" VerticalAlignment="Center" />
                                 </Button>
                             </Grid>
                         </StackPanel>

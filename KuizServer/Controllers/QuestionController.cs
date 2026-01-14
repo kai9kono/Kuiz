@@ -31,14 +31,27 @@ public class QuestionController : ControllerBase
     [HttpGet("random/{count}")]
     public async Task<IActionResult> GetRandom(int count)
     {
+        Console.WriteLine($"?? GetRandom called with count: {count}");
+        
         if (count <= 0 || count > 100)
         {
+            Console.WriteLine($"?? Invalid count: {count}");
             return BadRequest(new { error = "Count must be between 1 and 100" });
         }
 
-        var questions = await _questionService.GetRandomQuestionsAsync(count);
-        return Ok(questions);
+        try
+        {
+            var questions = await _questionService.GetRandomQuestionsAsync(count);
+            Console.WriteLine($"? Retrieved {questions.Count} random questions");
+            return Ok(questions);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"? Error getting random questions: {ex.Message}");
+            return StatusCode(500, new { error = "Failed to retrieve questions", details = ex.Message });
+        }
     }
+
 
     /// <summary>
     /// Get a specific question by ID

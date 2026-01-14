@@ -228,5 +228,45 @@ namespace Kuiz.Services
         {
             PlayPlayer(_questionPlayer);
         }
+
+        /// <summary>
+        /// ñ‚ëËâπê∫Çí‚é~
+        /// </summary>
+        public void StopQuestion()
+        {
+            if (!_isInitialized || _questionPlayer == null) return;
+
+            try
+            {
+                _questionPlayer.Stop();
+            }
+            catch (Exception ex)
+            {
+                Logger.LogError(ex);
+            }
+        }
+
+        /// <summary>
+        /// Ç∑Ç◊ÇƒÇÃâπê∫Çí‚é~
+        /// </summary>
+        public void StopAll()
+        {
+            if (!_isInitialized) return;
+
+            try
+            {
+                _hoverPlayer?.Stop();
+                _pressPlayer?.Stop();
+                _swipePlayer?.Stop();
+                _buzzPlayer?.Stop();
+                _correctPlayer?.Stop();
+                _incorrectPlayer?.Stop();
+                _questionPlayer?.Stop();
+            }
+            catch (Exception ex)
+            {
+                Logger.LogError(ex);
+            }
+        }
     }
 }

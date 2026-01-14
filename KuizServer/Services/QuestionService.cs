@@ -12,16 +12,34 @@ public class QuestionService
     public QuestionService(IConfiguration configuration)
     {
         // RailwayのPostgreSQL接続文字列を環境変数から取得
-        _connectionString = Environment.GetEnvironmentVariable("DATABASE_URL") 
-            ?? configuration.GetConnectionString("DefaultConnection")
-            ?? "Host=localhost;Port=5432;Database=kuiz;Username=postgres;Password=postgres";
+        var databaseUrl = Environment.GetEnvironmentVariable("DATABASE_URL");
         
-        // Log connection info (without password)
-        var maskedConnection = _connectionString.Contains("Password=") 
-            ? _connectionString.Substring(0, _connectionString.IndexOf("Password=")) + "Password=***" 
-            : _connectionString;
-        Console.WriteLine($"?? Database connection: {maskedConnection}");
+        if (!string.IsNullOrEmpty(databaseUrl))
+        {
+            // RailwayのDATABASE_URLフォーマット: postgres://user:password@host:port/database
+            // Npgsqlフォーマットに変換: Host=host;Port=port;Database=database;Username=user;Password=password
+            try
+            {
+                var uri = new Uri(databaseUrl);
+                var userInfo = uri.UserInfo.Split(':');
+                _connectionString = $"Host={uri.Host};Port={uri.Port};Database={uri.LocalPath.TrimStart('/')};Username={userInfo[0]};Password={userInfo[1]};SSL Mode=Require;Trust Server Certificate=true";
+                Console.WriteLine($"?? Using Railway DATABASE_URL: Host={uri.Host}, Database={uri.LocalPath.TrimStart('/')}");
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"?? Failed to parse DATABASE_URL: {ex.Message}");
+                _connectionString = configuration.GetConnectionString("DefaultConnection")
+                    ?? "Host=localhost;Port=5432;Database=kuiz;Username=postgres;Password=postgres";
+            }
+        }
+        else
+        {
+            _connectionString = configuration.GetConnectionString("DefaultConnection")
+                ?? "Host=localhost;Port=5432;Database=kuiz;Username=postgres;Password=postgres";
+            Console.WriteLine("?? Using local database connection");
+        }
     }
+
 
 
     public async Task<List<Question>> GetAllQuestionsAsync()
@@ -168,6 +186,8 @@ public class QuestionService
         try
         {
             Console.WriteLine("?? Initializing database...");
+            Console.WriteLine($"?? Connection string: {MaskPassword(_connectionString)}");
+            
             await using var conn = new NpgsqlConnection(_connectionString);
             await conn.OpenAsync();
             Console.WriteLine("? Database connection established");
@@ -185,12 +205,41 @@ public class QuestionService
             
             await cmd.ExecuteNonQueryAsync();
             Console.WriteLine("? Questions table ready");
+            
+            // Check question count
+            await using var countCmd = new NpgsqlCommand("SELECT COUNT(*) FROM questions", conn);
+            var count = Convert.ToInt32(await countCmd.ExecuteScalarAsync());
+            Console.WriteLine($"?? Total questions in database: {count}");
         }
         catch (Exception ex)
         {
             Console.WriteLine($"? Database initialization error: {ex.Message}");
+            Console.WriteLine($"?? Stack trace: {ex.StackTrace}");
             throw;
         }
     }
+    
+    private string MaskPassword(string connectionString)
+    {
+        if (string.IsNullOrEmpty(connectionString)) return "";
+        
+        var parts = connectionString.Split(';');
+        var masked = new List<string>();
+        
+        foreach (var part in parts)
+        {
+            if (part.StartsWith("Password=", StringComparison.OrdinalIgnoreCase))
+            {
+                masked.Add("Password=***");
+            }
+            else
+            {
+                masked.Add(part);
+            }
+        }
+        
+        return string.Join(";", masked);
+    }
 }
+
 

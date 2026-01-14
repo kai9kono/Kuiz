@@ -33,9 +33,9 @@ bld/
 [Ll]og/
 [Ll]ogs/
 
-# Inno Setup output directory (exclude output, include source)
-/installer/*.exe
-/installer/*.msi
+# Inno Setup source files (exclude from Git)
+*.iss
+
 
 
 
@@ -75,9 +75,6 @@ ScaffoldingReadMe.txt
 
 # StyleCop
 StyleCopReport.xml
-
-#ISS File
-*.iss
 
 # Files built by Visual Studio
 *_i.c

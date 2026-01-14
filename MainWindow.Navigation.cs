@@ -190,6 +190,9 @@ namespace Kuiz
 
         private void BtnBackToTitle_Click(object sender, RoutedEventArgs e)
         {
+            // Stop all sounds
+            _soundService.StopAll();
+            
             var myName = _profileService.PlayerName ?? TxtJoinPlayerName.Text.Trim();
             
             // Remove player from lobby
@@ -219,6 +222,9 @@ namespace Kuiz
 
         private void BtnBackToLobby_Click(object sender, RoutedEventArgs e)
         {
+            // Stop all sounds
+            _soundService.StopAll();
+            
             // Return to appropriate lobby
             if (_isHost)
             {
@@ -248,6 +254,9 @@ namespace Kuiz
         {
             LeaveConfirmOverlay.Visibility = Visibility.Collapsed;
             LeaveConfirmOverlay.IsHitTestVisible = false;
+            
+            // Stop all sounds immediately
+            _soundService.StopAll();
             
             var myName = _profileService.PlayerName ?? TxtJoinPlayerName.Text.Trim();
             
@@ -284,6 +293,9 @@ namespace Kuiz
         private async Task LeaveToTitleAsync()
         {
             HideAllOverlays();
+
+            // Stop all sounds immediately
+            _soundService.StopAll();
 
             // Cancel ongoing reveal task
             _revealCts?.Cancel();
@@ -385,6 +397,9 @@ namespace Kuiz
             // Close confirmation overlay
             LeaveLobbyConfirmOverlay.Visibility = Visibility.Collapsed;
             LeaveLobbyConfirmOverlay.IsHitTestVisible = false;
+
+            // Stop all sounds immediately
+            _soundService.StopAll();
 
             // Show loading overlay
             TxtLoadingMessage.Text = "ÉçÉrÅ[Ç©ÇÁëﬁèoíÜ...";

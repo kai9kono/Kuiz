@@ -89,15 +89,31 @@ namespace Kuiz.Services
         {
             try
             {
+                Logger.LogInfo($"?? Getting {count} random questions from {ApiUrl}/random/{count}");
+                
                 var response = await _httpClient.GetAsync($"{ApiUrl}/random/{count}");
-                if (!response.IsSuccessStatusCode) return new List<Question>();
+                
+                Logger.LogInfo($"?? Response status: {response.StatusCode}");
+                
+                if (!response.IsSuccessStatusCode)
+                {
+                    var error = await response.Content.ReadAsStringAsync();
+                    Logger.LogError(new Exception($"Failed to get random questions: {response.StatusCode} - {error}"));
+                    return new List<Question>();
+                }
                 
                 var json = await response.Content.ReadAsStringAsync();
-                return JsonSerializer.Deserialize<List<Question>>(json, new JsonSerializerOptions 
+                Logger.LogInfo($"?? Response JSON length: {json.Length}");
+                
+                var questions = JsonSerializer.Deserialize<List<Question>>(json, new JsonSerializerOptions 
                 { 
                     PropertyNameCaseInsensitive = true 
                 }) ?? new List<Question>();
+                
+                Logger.LogInfo($"? Successfully deserialized {questions.Count} random questions");
+                return questions;
             }
+
             catch (Exception ex)
             {
                 Logger.LogError(ex);
