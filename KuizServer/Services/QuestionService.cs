@@ -14,6 +14,12 @@ public class QuestionService
         // RailwayのPostgreSQL接続文字列を環境変数から取得
         var databaseUrl = Environment.GetEnvironmentVariable("DATABASE_URL");
         
+        Console.WriteLine("===========================================");
+        Console.WriteLine("?? QuestionService Constructor");
+        Console.WriteLine($"   DATABASE_URL env var: {(string.IsNullOrEmpty(databaseUrl) ? "NOT SET" : "SET")}");
+        Console.WriteLine($"   DATABASE_URL value: {databaseUrl}");
+        Console.WriteLine("===========================================");
+        
         if (!string.IsNullOrEmpty(databaseUrl))
         {
             // RailwayのDATABASE_URLフォーマット: postgres://user:password@host:port/database
