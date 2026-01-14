@@ -3,6 +3,7 @@ using System.Linq;
 using System.Net.Http;
 using System.Text;
 using System.Text.Json;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
 using Kuiz.Models;
@@ -16,6 +17,7 @@ namespace Kuiz
     {
         private int _lastClientSessionId = -1;
         private int _lastClientQuestionIndex = -1;
+        private CancellationTokenSource? _pollStateCts;
 
         private void BtnTitleJoin_Click(object sender, RoutedEventArgs e) => ShowPanel(JoinPanel);
         private void BtnJoinBack_Click(object sender, RoutedEventArgs e) => ShowPanel(TitlePanel);
@@ -47,7 +49,14 @@ namespace Kuiz
                     TxtJoinStatus.Text = "ロビーに参加しました！";
                     _profileService.Save(name);
                     ShowPanel(GamePanel);
-                    _ = PollStateLoopAsync(hostUrl);
+                    
+                    // Cancel any existing poll loop
+                    _pollStateCts?.Cancel();
+                    _pollStateCts?.Dispose();
+                    
+                    // Start new poll loop
+                    _pollStateCts = new CancellationTokenSource();
+                    _ = PollStateLoopAsync(hostUrl, _pollStateCts.Token);
                 }
                 else if (res.StatusCode == System.Net.HttpStatusCode.Forbidden)
                 {
@@ -93,14 +102,14 @@ namespace Kuiz
             }
         }
 
-        private async Task PollStateLoopAsync(string hostUrl)
+        private async Task PollStateLoopAsync(string hostUrl, CancellationToken cancellationToken)
         {
-            while (true)
+            while (!cancellationToken.IsCancellationRequested)
             {
                 try
                 {
-                    await Task.Delay(500);
-                    var res = await _httpClient.GetAsync(new Uri(new Uri(hostUrl), "/state"));
+                    await Task.Delay(500, cancellationToken);
+                    var res = await _httpClient.GetAsync(new Uri(new Uri(hostUrl), "/state"), cancellationToken);
 
                     if (res.IsSuccessStatusCode)
                     {
@@ -108,6 +117,12 @@ namespace Kuiz
                         var state = JsonSerializer.Deserialize<StateDto>(json);
                         Dispatcher.Invoke(() => ApplyState(state));
                     }
+                }
+                catch (OperationCanceledException)
+                {
+                    // Loop was cancelled - exit gracefully
+                    Logger.LogInfo("PollStateLoopAsync cancelled");
+                    break;
                 }
                 catch (Exception ex)
                 {

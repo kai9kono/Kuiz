@@ -258,6 +258,16 @@ namespace Kuiz
             // Stop all sounds immediately
             _soundService.StopAll();
             
+            // Cancel ongoing reveal task
+            _revealCts?.Cancel();
+            _revealCts?.Dispose();
+            _revealCts = null;
+            
+            // Stop the poll state loop for clients
+            _pollStateCts?.Cancel();
+            _pollStateCts?.Dispose();
+            _pollStateCts = null;
+            
             var myName = _profileService.PlayerName ?? TxtJoinPlayerName.Text.Trim();
             
             // Remove player from lobby
@@ -299,6 +309,13 @@ namespace Kuiz
 
             // Cancel ongoing reveal task
             _revealCts?.Cancel();
+            _revealCts?.Dispose();
+            _revealCts = null;
+            
+            // Stop the poll state loop for clients
+            _pollStateCts?.Cancel();
+            _pollStateCts?.Dispose();
+            _pollStateCts = null;
 
             // Stop host service if running (with timeout)
             try
@@ -400,6 +417,16 @@ namespace Kuiz
 
             // Stop all sounds immediately
             _soundService.StopAll();
+            
+            // Cancel ongoing reveal task
+            _revealCts?.Cancel();
+            _revealCts?.Dispose();
+            _revealCts = null;
+            
+            // Stop the poll state loop for clients
+            _pollStateCts?.Cancel();
+            _pollStateCts?.Dispose();
+            _pollStateCts = null;
 
             // Show loading overlay
             TxtLoadingMessage.Text = "ÉçÉrÅ[Ç©ÇÁëﬁèoíÜ...";
