@@ -170,6 +170,19 @@ namespace Kuiz
             StartGameConfirm.Visibility = Visibility.Collapsed;
             StartGameConfirm.IsHitTestVisible = false;
 
+            // サーバー接続チェック
+            try
+            {
+                await _questionService.TestConnectionAsync();
+            }
+            catch (Exception ex)
+            {
+                Logger.LogError(ex);
+                // サーバー接続エラーのポップアップを表示
+                ShowServerErrorPopup("サーバーに接続できません。\nインターネット接続を確認してください。");
+                return;
+            }
+
             TxtGameStatus.Text = "Starting game...";
 
             // Start host service only if not already running
@@ -179,6 +192,7 @@ namespace Kuiz
                 if (!_hostService.IsRunning)
                 {
                     TxtGameStatus.Text = "Failed to start host service";
+                    ShowServerErrorPopup("ホストサービスの起動に失敗しました。");
                     return;
                 }
             }
@@ -186,7 +200,16 @@ namespace Kuiz
             // Ensure questions are loaded
             if (_questionService.Questions == null || _questionService.Questions.Count == 0)
             {
-                await LoadQuestionsAsync();
+                try
+                {
+                    await LoadQuestionsAsync();
+                }
+                catch (Exception ex)
+                {
+                    Logger.LogError(ex);
+                    ShowServerErrorPopup("問題の読み込みに失敗しました。\nサーバーに接続できません。");
+                    return;
+                }
             }
             
             // Validate again after loading questions
@@ -197,6 +220,7 @@ namespace Kuiz
 
             _gameState.SessionId++;
             ResetGameFlow();
+
 
             int pointsToWin = int.Parse(TxtPointsToWin.Text);
             int maxMistakes = int.Parse(TxtMaxMistakes.Text);

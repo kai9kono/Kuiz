@@ -1,4 +1,2 @@
 <Solution>
-  <Project Path="Kuiz.csproj" />
-  <Project Path="KuizServer/KuizServer.csproj" />
 </Solution>

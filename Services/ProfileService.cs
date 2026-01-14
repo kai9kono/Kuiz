@@ -35,15 +35,26 @@ namespace Kuiz.Services
                         {
                             PlayerName = obj.Name;
                         }
+                        else
+                        {
+                            PlayerName = "ちびすけ明太子";
+                        }
                         IsDarkMode = obj.IsDarkMode;
                     }
+                }
+                else
+                {
+                    // プロファイルファイルが存在しない場合、デフォルト名を設定
+                    PlayerName = "ちびすけ明太子";
                 }
             }
             catch (Exception ex)
             {
                 Logger.LogError(ex);
+                PlayerName = "ちびすけ明太子";
             }
         }
+
 
         public void Save(string name, bool? darkMode = null)
         {

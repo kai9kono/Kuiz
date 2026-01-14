@@ -1,5 +1,4 @@
 using System.Windows;
-using Npgsql;
 using Kuiz.Services;
 
 namespace Kuiz
@@ -7,6 +6,7 @@ namespace Kuiz
     public partial class AddQuestionWindow : Window
     {
         public int? EditingId { get; set; }
+        private readonly QuestionService _questionService = new();
         
         public AddQuestionWindow()
         {
@@ -28,23 +28,15 @@ namespace Kuiz
             {
                 try
                 {
-                    await using var c = new NpgsqlConnection(QuestionService.DefaultConnectionString);
-                    await c.OpenAsync();
-                    
                     if (EditingId.HasValue)
                     {
-                        var cmd = new NpgsqlCommand("UPDATE questions SET text=@t, answer=@a WHERE id=@id", c);
-                        cmd.Parameters.AddWithValue("@t", text);
-                        cmd.Parameters.AddWithValue("@a", ans);
-                        cmd.Parameters.AddWithValue("@id", EditingId.Value);
-                        await cmd.ExecuteNonQueryAsync();
+                        // Update existing question via API
+                        await _questionService.UpdateQuestionAsync(EditingId.Value, text, ans, "User");
                     }
                     else
                     {
-                        var cmd = new NpgsqlCommand("INSERT INTO questions (text, answer) VALUES (@t,@a)", c);
-                        cmd.Parameters.AddWithValue("@t", text);
-                        cmd.Parameters.AddWithValue("@a", ans);
-                        await cmd.ExecuteNonQueryAsync();
+                        // Create new question via API
+                        await _questionService.AddQuestionAsync(text, ans, "User");
                     }
 
                     MessageBox.Show("Saved.", "Add", MessageBoxButton.OK, MessageBoxImage.Information);
@@ -54,7 +46,7 @@ namespace Kuiz
                 catch (System.Exception ex)
                 {
                     Logger.LogError(ex);
-                    MessageBox.Show("DB error: " + ex.Message, "Add", MessageBoxButton.OK, MessageBoxImage.Error);
+                    MessageBox.Show("API error: " + ex.Message, "Add", MessageBoxButton.OK, MessageBoxImage.Error);
                 }
             }
         }
@@ -65,3 +57,4 @@ namespace Kuiz
         }
     }
 }
+

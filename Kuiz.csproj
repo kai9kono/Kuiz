@@ -7,6 +7,7 @@
   <ImplicitUsings>enable</ImplicitUsings>
   <UseWPF>true</UseWPF>
   <DefaultItemExcludes>$(DefaultItemExcludes);KuizServer\**</DefaultItemExcludes>
+  <ApplicationIcon>Resources\icon\icon.ico</ApplicationIcon>
 </PropertyGroup>
 
 <ItemGroup>
@@ -27,6 +28,10 @@
   <EmbeddedResource Remove="KuizServer\**" />
   <Page Remove="KuizServer\**" />
   <None Remove="KuizServer\**" />
+</ItemGroup>
+
+<ItemGroup>
+  <Content Include="Resources\icon\icon.ico" />
 </ItemGroup>
 
   <ItemGroup>

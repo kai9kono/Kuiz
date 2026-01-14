@@ -6,12 +6,17 @@ namespace Kuiz
 {
     /// <summary>
     /// アプリケーションのログ出力を担当
+    /// MSIX対応: LocalApplicationDataに保存
     /// </summary>
     internal static class Logger
     {
         private static readonly object _lock = new();
-        private static readonly string _dir = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "logs");
-        private static readonly string _file = Path.Combine(_dir, "kuiz.log");
+        private static readonly string _dir = Path.Combine(
+            Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), 
+            "Kuiz", 
+            "logs");
+        private static readonly string _file = Path.Combine(_dir, $"kuiz_{DateTime.Now:yyyyMMdd}.log");
+
 
         static Logger()
         {

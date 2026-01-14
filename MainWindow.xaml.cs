@@ -30,14 +30,12 @@ namespace Kuiz
         private readonly SoundService _soundService = SoundService.Instance;
         private readonly PlayerStatsService _playerStatsService = new();
 
-        // Public accessor for other windows
-        public static string DefaultPostgresConnection => QuestionService.DefaultConnectionString;
-
         public event PropertyChangedEventHandler? PropertyChanged;
 
         public MainWindow()
         {
             InitializeComponent();
+
             
             // Set ThemeService as DataContext for bindings
             this.DataContext = _themeService;
@@ -49,12 +47,11 @@ namespace Kuiz
         {
             _profileService.Load();
 
-            if (!string.IsNullOrEmpty(_profileService.PlayerName))
-            {
-                TxtJoinPlayerName.Text = _profileService.PlayerName;
-            }
+            // プレイヤー名をテキストボックスに設定（デフォルト：ちびすけ明太子）
+            TxtJoinPlayerName.Text = _profileService.PlayerName ?? "ちびすけ明太子";
             
             // Apply saved theme using ThemeService
+
             _themeService.SetTheme(_profileService.IsDarkMode);
             ApplyThemeToUI();
 
@@ -184,9 +181,77 @@ namespace Kuiz
             }
         }
         
+        
         private static bool IsTextNumeric(string text)
         {
             return Regex.IsMatch(text, "^[0-9]+$");
+        }
+
+        private void ShowServerErrorPopup(string message)
+        {
+            // 既存のエラーオーバーレイがあれば使用、なければStartGameConfirmを流用
+            var errorOverlay = new System.Windows.Controls.Grid
+            {
+                Background = new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromArgb(200, 0, 0, 0)),
+                HorizontalAlignment = HorizontalAlignment.Stretch,
+                VerticalAlignment = VerticalAlignment.Stretch,
+                Visibility = Visibility.Visible
+            };
+
+            var errorBorder = new System.Windows.Controls.Border
+            {
+                Width = 520,
+                Padding = new Thickness(24),
+                CornerRadius = new CornerRadius(8),
+                Background = _themeService.DialogBackgroundColor,
+                HorizontalAlignment = HorizontalAlignment.Center,
+                VerticalAlignment = VerticalAlignment.Center
+            };
+
+            var stackPanel = new System.Windows.Controls.StackPanel();
+
+            var titleText = new System.Windows.Controls.TextBlock
+            {
+                Text = "⚠️ 接続エラー",
+                FontSize = 22,
+                FontWeight = FontWeights.Bold,
+                TextAlignment = TextAlignment.Center,
+                Foreground = _themeService.ForegroundColor,
+                Margin = new Thickness(0, 0, 0, 16)
+            };
+
+            var messageText = new System.Windows.Controls.TextBlock
+            {
+                Text = message,
+                FontSize = 16,
+                TextAlignment = TextAlignment.Center,
+                TextWrapping = TextWrapping.Wrap,
+                Foreground = _themeService.SecondaryTextColor,
+                Margin = new Thickness(0, 0, 0, 24)
+            };
+
+            var okButton = new System.Windows.Controls.Button
+            {
+                Content = "OK",
+                Width = 140,
+                Height = 50,
+                FontSize = 16,
+                HorizontalAlignment = HorizontalAlignment.Center
+            };
+            okButton.Click += (s, e) =>
+            {
+                ((System.Windows.Controls.Grid)this.Content).Children.Remove(errorOverlay);
+            };
+
+            stackPanel.Children.Add(titleText);
+            stackPanel.Children.Add(messageText);
+            stackPanel.Children.Add(okButton);
+
+            errorBorder.Child = stackPanel;
+            errorOverlay.Children.Add(errorBorder);
+
+            ((System.Windows.Controls.Grid)this.Content).Children.Add(errorOverlay);
+            System.Windows.Controls.Panel.SetZIndex(errorOverlay, 100);
         }
     }
 }

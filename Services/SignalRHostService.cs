@@ -12,11 +12,11 @@ namespace Kuiz.Services
     {
         // Railway.appのURL
         // 開発環境: http://localhost:8080
-        // 本番環境: https://0tgt7v7f.up.railway.app
+        // 本番環境: https://kuiz-production.up.railway.app
 #if DEBUG
         private const string ServerUrl = "http://localhost:8080"; // 開発環境
 #else
-        private const string ServerUrl = "https://0tgt7v7f.up.railway.app"; // 本番環境
+        private const string ServerUrl = "https://kuiz-production.up.railway.app"; // 本番環境
 #endif
         public const int MaxPlayers = 4;
 
