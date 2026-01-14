@@ -14,92 +14,81 @@ public class GameHub : Hub
         _gameRoomService = gameRoomService;
     }
 
-    public async Task JoinLobby(string lobbyCode, string playerName)
+    public override async Task OnConnectedAsync()
     {
-        var lobby = _lobbyService.GetLobby(lobbyCode);
-        if (lobby == null)
-        {
-            await Clients.Caller.SendAsync("Error", "Lobby not found");
-            return;
-        }
+        await base.OnConnectedAsync();
+    }
 
+    public override async Task OnDisconnectedAsync(Exception? exception)
+    {
+        // Handle player disconnection
+        var playerName = _lobbyService.GetPlayerByConnectionId(Context.ConnectionId);
+        if (!string.IsNullOrEmpty(playerName))
+        {
+            var lobbyCode = _lobbyService.GetLobbyByPlayer(playerName);
+            if (!string.IsNullOrEmpty(lobbyCode))
+            {
+                await LeaveLobby(lobbyCode, playerName);
+            }
+        }
+        
+        await base.OnDisconnectedAsync(exception);
+    }
+
+    // Lobby management
+    public async Task<string> CreateLobby(string hostName)
+    {
+        var lobbyCode = _lobbyService.CreateLobby(hostName, Context.ConnectionId);
         await Groups.AddToGroupAsync(Context.ConnectionId, lobbyCode);
-        await Clients.Group(lobbyCode).SendAsync("PlayerJoined", playerName, lobby.Players);
+        return lobbyCode;
+    }
+
+    public async Task<bool> JoinLobby(string lobbyCode, string playerName)
+    {
+        var success = _lobbyService.JoinLobby(lobbyCode, playerName, Context.ConnectionId);
+        if (success)
+        {
+            await Groups.AddToGroupAsync(Context.ConnectionId, lobbyCode);
+            await Clients.Group(lobbyCode).SendAsync("PlayerJoined", playerName);
+        }
+        return success;
     }
 
     public async Task LeaveLobby(string lobbyCode, string playerName)
     {
         _lobbyService.LeaveLobby(lobbyCode, playerName);
         await Groups.RemoveFromGroupAsync(Context.ConnectionId, lobbyCode);
-        
-        var lobby = _lobbyService.GetLobby(lobbyCode);
-        if (lobby != null)
-        {
-            await Clients.Group(lobbyCode).SendAsync("PlayerLeft", playerName, lobby.Players);
-        }
+        await Clients.Group(lobbyCode).SendAsync("PlayerLeft", playerName);
     }
 
-    public async Task StartGame(string lobbyCode)
+    public async Task<object> GetLobbyState(string lobbyCode)
     {
-        var lobby = _lobbyService.GetLobby(lobbyCode);
-        if (lobby == null)
-        {
-            await Clients.Caller.SendAsync("Error", "Lobby not found");
-            return;
-        }
-
-        _lobbyService.StartGame(lobbyCode);
-        var room = _gameRoomService.CreateRoom(lobbyCode, lobby.Players);
-        
-        await Clients.Group(lobbyCode).SendAsync("GameStarted", room.SessionId);
+        return _lobbyService.GetLobbyState(lobbyCode);
     }
 
-    public async Task Buzz(string lobbyCode, string playerName)
+    // Game management
+    public async Task StartGame(string lobbyCode, object gameSettings)
     {
-        var success = _gameRoomService.ProcessBuzz(lobbyCode, playerName);
-        if (success)
-        {
-            var room = _gameRoomService.GetRoom(lobbyCode);
-            await Clients.Group(lobbyCode).SendAsync("BuzzReceived", playerName, room?.BuzzOrder);
-        }
+        await Clients.Group(lobbyCode).SendAsync("GameStarting", gameSettings);
     }
 
-    public async Task SubmitAnswer(string lobbyCode, string playerName, string answer)
+    public async Task SendBuzz(string lobbyCode, string playerName)
     {
-        var lobby = _lobbyService.GetLobby(lobbyCode);
-        if (lobby?.Settings == null)
-        {
-            await Clients.Caller.SendAsync("Error", "Invalid lobby");
-            return;
-        }
-
-        var (correct, gameOver, winner) = _gameRoomService.ProcessAnswer(
-            lobbyCode, 
-            playerName, 
-            answer, 
-            lobby.Settings.MaxMistakes, 
-            lobby.Settings.PointsToWin
-        );
-
-        var room = _gameRoomService.GetRoom(lobbyCode);
-        
-        await Clients.Group(lobbyCode).SendAsync("AnswerResult", playerName, correct, room?.Scores, room?.Mistakes);
-
-        if (gameOver && winner != null)
-        {
-            await Clients.Group(lobbyCode).SendAsync("GameOver", winner, room?.Scores, room?.Mistakes);
-            _gameRoomService.RemoveRoom(lobbyCode);
-        }
+        await Clients.Group(lobbyCode).SendAsync("PlayerBuzzed", playerName);
     }
 
-    public async Task NextQuestion(string lobbyCode, string question, string answer)
+    public async Task SendAnswer(string lobbyCode, string playerName, string answer)
     {
-        _gameRoomService.SetCurrentQuestion(lobbyCode, question, answer);
-        await Clients.Group(lobbyCode).SendAsync("QuestionRevealed", question);
+        await Clients.Group(lobbyCode).SendAsync("PlayerAnswered", playerName, answer);
     }
 
-    public async Task UpdateGameState(string lobbyCode, object state)
+    public async Task UpdateGameState(string lobbyCode, object gameState)
     {
-        await Clients.Group(lobbyCode).SendAsync("StateUpdated", state);
+        await Clients.Group(lobbyCode).SendAsync("GameStateUpdated", gameState);
+    }
+
+    public async Task EndGame(string lobbyCode, object results)
+    {
+        await Clients.Group(lobbyCode).SendAsync("GameEnded", results);
     }
 }

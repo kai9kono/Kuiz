@@ -1,102 +1,130 @@
 using System.Collections.Concurrent;
-using KuizServer.Models;
 
 namespace KuizServer.Services;
 
 public class LobbyService
 {
     private readonly ConcurrentDictionary<string, Lobby> _lobbies = new();
-    private readonly Random _random = new();
+    private readonly ConcurrentDictionary<string, string> _playerToLobby = new();
+    private readonly ConcurrentDictionary<string, string> _connectionToPlayer = new();
+    private const int MaxPlayersPerLobby = 4;
 
-    public string CreateLobby(string hostName)
+    public string CreateLobby(string hostName, string connectionId)
     {
-        var code = GenerateLobbyCode();
+        var lobbyCode = GenerateLobbyCode();
         var lobby = new Lobby
         {
-            LobbyCode = code,
+            Code = lobbyCode,
             HostName = hostName,
-            Players = new List<string> { hostName },
-            Settings = new GameSettings()
+            Players = new List<Player> { new Player { Name = hostName, ConnectionId = connectionId } },
+            CreatedAt = DateTime.UtcNow
         };
 
-        _lobbies[code] = lobby;
-        return code;
+        _lobbies[lobbyCode] = lobby;
+        _playerToLobby[hostName] = lobbyCode;
+        _connectionToPlayer[connectionId] = hostName;
+
+        return lobbyCode;
     }
 
-    public bool JoinLobby(string lobbyCode, string playerName)
+    public bool JoinLobby(string lobbyCode, string playerName, string connectionId)
     {
         if (!_lobbies.TryGetValue(lobbyCode, out var lobby))
             return false;
 
-        if (lobby.Players.Count >= lobby.MaxPlayers)
+        if (lobby.Players.Count >= MaxPlayersPerLobby)
             return false;
 
-        if (lobby.Players.Contains(playerName))
+        if (lobby.Players.Any(p => p.Name == playerName))
             return false;
 
-        lobby.Players.Add(playerName);
+        lobby.Players.Add(new Player { Name = playerName, ConnectionId = connectionId });
+        _playerToLobby[playerName] = lobbyCode;
+        _connectionToPlayer[connectionId] = playerName;
+
         return true;
     }
 
-    public bool LeaveLobby(string lobbyCode, string playerName)
+    public void LeaveLobby(string lobbyCode, string playerName)
     {
         if (!_lobbies.TryGetValue(lobbyCode, out var lobby))
-            return false;
+            return;
 
-        lobby.Players.Remove(playerName);
-
-        // Remove lobby if empty
-        if (lobby.Players.Count == 0)
+        var player = lobby.Players.FirstOrDefault(p => p.Name == playerName);
+        if (player != null)
         {
-            _lobbies.TryRemove(lobbyCode, out _);
+            lobby.Players.Remove(player);
+            _playerToLobby.TryRemove(playerName, out _);
+            _connectionToPlayer.TryRemove(player.ConnectionId, out _);
+
+            // Remove lobby if empty or host left
+            if (lobby.Players.Count == 0 || playerName == lobby.HostName)
+            {
+                _lobbies.TryRemove(lobbyCode, out _);
+                foreach (var p in lobby.Players)
+                {
+                    _playerToLobby.TryRemove(p.Name, out _);
+                    _connectionToPlayer.TryRemove(p.ConnectionId, out _);
+                }
+            }
         }
-
-        return true;
     }
 
-    public Lobby? GetLobby(string lobbyCode)
-    {
-        _lobbies.TryGetValue(lobbyCode, out var lobby);
-        return lobby;
-    }
-
-    public bool UpdateSettings(string lobbyCode, GameSettings settings)
+    public object GetLobbyState(string lobbyCode)
     {
         if (!_lobbies.TryGetValue(lobbyCode, out var lobby))
-            return false;
+            return new { exists = false };
 
-        lobby.Settings = settings;
-        return true;
+        return new
+        {
+            exists = true,
+            code = lobby.Code,
+            host = lobby.HostName,
+            players = lobby.Players.Select(p => p.Name).ToList(),
+            playerCount = lobby.Players.Count,
+            maxPlayers = MaxPlayersPerLobby
+        };
     }
 
-    public bool StartGame(string lobbyCode)
+    public string? GetPlayerByConnectionId(string connectionId)
     {
-        if (!_lobbies.TryGetValue(lobbyCode, out var lobby))
-            return false;
+        _connectionToPlayer.TryGetValue(connectionId, out var playerName);
+        return playerName;
+    }
 
-        lobby.Status = LobbyStatus.InGame;
-        return true;
+    public string? GetLobbyByPlayer(string playerName)
+    {
+        _playerToLobby.TryGetValue(playerName, out var lobbyCode);
+        return lobbyCode;
     }
 
     private string GenerateLobbyCode()
     {
         const string chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
-        var code = new char[6];
-        for (int i = 0; i < 6; i++)
-        {
-            code[i] = chars[_random.Next(chars.Length)];
-        }
-        return new string(code);
-    }
-
-    public void CleanupOldLobbies(TimeSpan maxAge)
-    {
-        var cutoff = DateTime.UtcNow - maxAge;
-        var oldLobbies = _lobbies.Where(kvp => kvp.Value.CreatedAt < cutoff).Select(kvp => kvp.Key).ToList();
+        var random = new Random();
+        string code;
         
-        foreach (var code in oldLobbies)
+        do
         {
-            _lobbies.TryRemove(code, out _);
-        }
+            code = new string(Enumerable.Range(0, 6)
+                .Select(_ => chars[random.Next(chars.Length)])
+                .ToArray());
+        } while (_lobbies.ContainsKey(code));
+
+        return code;
     }
+}
+
+public class Lobby
+{
+    public required string Code { get; set; }
+    public required string HostName { get; set; }
+    public required List<Player> Players { get; set; }
+    public DateTime CreatedAt { get; set; }
+}
+
+public class Player
+{
+    public required string Name { get; set; }
+    public required string ConnectionId { get; set; }
 }

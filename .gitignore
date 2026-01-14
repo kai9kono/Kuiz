@@ -361,12 +361,3 @@ MigrationBackup/
 
 # Fody - auto-generated XML schema
 FodyWeavers.xsd
-
-# Railway.app
-.railway/
-railway.json
-
-# Local environment files
-.env
-.env.local
-appsettings.Development.json

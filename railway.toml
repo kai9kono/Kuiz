@@ -1,16 +1,10 @@
 [build]
-builder = "NIXPACKS"
-buildCommand = "cd KuizServer && dotnet publish -c Release -o out"
+builder = "dockerfile"
+dockerfilePath = "KuizServer/Dockerfile"
 
 [deploy]
-startCommand = "cd KuizServer/out && dotnet KuizServer.dll"
-restartPolicyType = "ON_FAILURE"
+startCommand = "dotnet KuizServer.dll"
+healthcheckPath = "/health"
+healthcheckTimeout = 100
+restartPolicyType = "on_failure"
 restartPolicyMaxRetries = 10
-
-[[env]]
-name = "ASPNETCORE_ENVIRONMENT"
-value = "Production"
-
-[[env]]
-name = "ASPNETCORE_URLS"
-value = "http://0.0.0.0:$PORT"

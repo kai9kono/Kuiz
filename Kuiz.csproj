@@ -1,29 +1,33 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
-  <PropertyGroup>
-    <OutputType>WinExe</OutputType>
-    <TargetFramework>net10.0-windows</TargetFramework>
-    <Nullable>enable</Nullable>
-    <ImplicitUsings>enable</ImplicitUsings>
-    <UseWPF>true</UseWPF>
-  </PropertyGroup>
+<PropertyGroup>
+  <OutputType>WinExe</OutputType>
+  <TargetFramework>net10.0-windows</TargetFramework>
+  <Nullable>enable</Nullable>
+  <ImplicitUsings>enable</ImplicitUsings>
+  <UseWPF>true</UseWPF>
+  <DefaultItemExcludes>$(DefaultItemExcludes);KuizServer\**</DefaultItemExcludes>
+</PropertyGroup>
 
-  <ItemGroup>
-    <None Remove="Resources\img\button-pressed.png" />
-    <None Remove="Resources\img\button-unavailable.png" />
-    <None Remove="Resources\img\button-unpressed.png" />
-    <None Remove="Resources\sound\play-button-press.mp3" />
-    <None Remove="Resources\sound\swipe.mp3" />
-    <None Remove="Resources\sound\ui-button-hover.mp3" />
-    <None Remove="Resources\sound\ui-button-press.mp3" />
-    <None Remove="Resources\sound\correct.mp3" />
-    <None Remove="Resources\sound\incorrect.mp3" />
-    <None Remove="Resources\sound\question.mp3" />
-  </ItemGroup>
+<ItemGroup>
+  <None Remove="Resources\img\button-pressed.png" />
+  <None Remove="Resources\img\button-unavailable.png" />
+  <None Remove="Resources\img\button-unpressed.png" />
+  <None Remove="Resources\sound\play-button-press.mp3" />
+  <None Remove="Resources\sound\swipe.mp3" />
+  <None Remove="Resources\sound\ui-button-hover.mp3" />
+  <None Remove="Resources\sound\ui-button-press.mp3" />
+  <None Remove="Resources\sound\correct.mp3" />
+  <None Remove="Resources\sound\incorrect.mp3" />
+  <None Remove="Resources\sound\question.mp3" />
+</ItemGroup>
 
-  <ItemGroup>
-    <None Include="KuizServer\KuizServer.csproj" />
-  </ItemGroup>
+<ItemGroup>
+  <Compile Remove="KuizServer\**" />
+  <EmbeddedResource Remove="KuizServer\**" />
+  <Page Remove="KuizServer\**" />
+  <None Remove="KuizServer\**" />
+</ItemGroup>
 
   <ItemGroup>
     <PackageReference Include="Microsoft.AspNetCore.SignalR.Client" Version="10.0.2" />
