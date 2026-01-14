@@ -45,12 +45,25 @@ public class GameHub : Hub
 
     public async Task<bool> JoinLobby(string lobbyCode, string playerName)
     {
+        Console.WriteLine($"[GameHub] JoinLobby called: Code={lobbyCode}, Player={playerName}, ConnectionId={Context.ConnectionId}");
+        
         var success = _lobbyService.JoinLobby(lobbyCode, playerName, Context.ConnectionId);
+        
+        Console.WriteLine($"[GameHub] JoinLobby result: {success}");
+        
         if (success)
         {
             await Groups.AddToGroupAsync(Context.ConnectionId, lobbyCode);
+            Console.WriteLine($"[GameHub] Player {playerName} added to group {lobbyCode}");
+            
             await Clients.Group(lobbyCode).SendAsync("PlayerJoined", playerName);
+            Console.WriteLine($"[GameHub] Sent PlayerJoined event to group {lobbyCode}");
         }
+        else
+        {
+            Console.WriteLine($"[GameHub] Failed to join lobby: Code={lobbyCode}, Player={playerName}");
+        }
+        
         return success;
     }
 

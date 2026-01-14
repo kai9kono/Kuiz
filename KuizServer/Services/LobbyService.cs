@@ -29,19 +29,32 @@ public class LobbyService
 
     public bool JoinLobby(string lobbyCode, string playerName, string connectionId)
     {
+        Console.WriteLine($"[LobbyService] JoinLobby: Code={lobbyCode}, Player={playerName}");
+        
         if (!_lobbies.TryGetValue(lobbyCode, out var lobby))
+        {
+            Console.WriteLine($"[LobbyService] Lobby not found: {lobbyCode}");
+            Console.WriteLine($"[LobbyService] Available lobbies: {string.Join(", ", _lobbies.Keys)}");
             return false;
+        }
 
         if (lobby.Players.Count >= MaxPlayersPerLobby)
+        {
+            Console.WriteLine($"[LobbyService] Lobby full: {lobbyCode}");
             return false;
+        }
 
         if (lobby.Players.Any(p => p.Name == playerName))
+        {
+            Console.WriteLine($"[LobbyService] Player already in lobby: {playerName}");
             return false;
+        }
 
         lobby.Players.Add(new Player { Name = playerName, ConnectionId = connectionId });
         _playerToLobby[playerName] = lobbyCode;
         _connectionToPlayer[connectionId] = playerName;
 
+        Console.WriteLine($"[LobbyService] Player {playerName} joined lobby {lobbyCode}. Total players: {lobby.Players.Count}");
         return true;
     }
 

@@ -1,4 +1,5 @@
 using System;
+using System.Net.Http;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.SignalR.Client;
 
@@ -37,7 +38,8 @@ namespace Kuiz.Services
                 if (_serverUrl.EndsWith('/'))
                     _serverUrl = _serverUrl.TrimEnd('/');
 
-                Logger.LogInfo($"Connecting to server: {_serverUrl}/gamehub");
+                Logger.LogInfo($"?? Connecting to server: {_serverUrl}/gamehub");
+                Logger.LogInfo($"?? Player: {playerName}, Lobby: {lobbyCode}");
 
                 // SignalR接続を構築
                 _connection = new HubConnectionBuilder()
@@ -45,24 +47,51 @@ namespace Kuiz.Services
                     .WithAutomaticReconnect()
                     .Build();
 
+                Logger.LogInfo("?? HubConnection built, setting up event handlers...");
+
                 // イベントハンドラー登録
                 SetupEventHandlers();
 
+                Logger.LogInfo("?? Starting connection...");
+
                 // サーバーに接続
                 await _connection.StartAsync();
+
+                Logger.LogInfo($"? Connection established. State: {_connection.State}");
+                Logger.LogInfo($"?? Attempting to join lobby: {lobbyCode}");
 
                 // ロビーに参加
                 var success = await _connection.InvokeAsync<bool>("JoinLobby", lobbyCode, playerName);
                 
                 if (success)
                 {
-                    Logger.LogInfo($"Joined lobby {lobbyCode} as {playerName}");
+                    Logger.LogInfo($"? Successfully joined lobby {lobbyCode} as {playerName}");
+                }
+                else
+                {
+                    Logger.LogInfo($"? Failed to join lobby {lobbyCode}. Server returned false.");
                 }
 
                 return success;
             }
+            catch (HttpRequestException httpEx)
+            {
+                Logger.LogError($"? HTTP Error connecting to server: {httpEx.Message}");
+                Logger.LogError($"   Server URL: {_serverUrl}/gamehub");
+                Logger.LogError(httpEx);
+                return false;
+            }
+            catch (TaskCanceledException timeoutEx)
+            {
+                Logger.LogError($"?? Connection timeout: {timeoutEx.Message}");
+                Logger.LogError(timeoutEx);
+                return false;
+            }
             catch (Exception ex)
             {
+                Logger.LogError($"? Unexpected error during connection: {ex.Message}");
+                Logger.LogError($"   Exception Type: {ex.GetType().Name}");
+                Logger.LogError($"   Server URL: {_serverUrl}/gamehub");
                 Logger.LogError(ex);
                 return false;
             }

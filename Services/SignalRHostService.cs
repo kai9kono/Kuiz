@@ -10,16 +10,7 @@ namespace Kuiz.Services
     /// </summary>
     public class SignalRHostService
     {
-        // Railway.appのURL
-        // 開発環境: http://localhost:8080
-        // 本番環境: https://kuiz-production.up.railway.app
-#if DEBUG
-        private const string ServerUrl = "http://localhost:8080"; // 開発環境
-#else
-        private const string ServerUrl = "https://kuiz-production.up.railway.app"; // 本番環境
-#endif
         public const int MaxPlayers = 4;
-
 
         private HubConnection? _connection;
         
@@ -35,38 +26,54 @@ namespace Kuiz.Services
         public Func<Task<object>>? OnStateRequested { get; set; }
         public Func<Task>? OnNextQuestionRequested { get; set; }
 
-        public async Task<(bool Success, string? Error, string? ActualUrl, string LobbyCode)> StartAsync(string? playerName = null)
+        public async Task<(bool Success, string? Error, string LobbyCode)> CreateLobbyAsync(string serverUrl, string hostName)
         {
             try
             {
                 if (_connection != null && _connection.State == HubConnectionState.Connected)
                 {
-                    return (true, null, ServerUrl, LobbyCode);
+                    Logger.LogInfo("?? Lobby already created, returning existing lobby code");
+                    return (true, null, LobbyCode);
                 }
+
+                // Ensure server URL doesn't end with /
+                if (serverUrl.EndsWith('/'))
+                    serverUrl = serverUrl.TrimEnd('/');
+
+                Logger.LogInfo($"?? Creating lobby on server: {serverUrl}/gamehub");
+                Logger.LogInfo($"?? Host: {hostName}");
 
                 // SignalR接続を構築
                 _connection = new HubConnectionBuilder()
-                    .WithUrl($"{ServerUrl}/gamehub")
+                    .WithUrl($"{serverUrl}/gamehub")
                     .WithAutomaticReconnect()
                     .Build();
+
+                Logger.LogInfo("?? HubConnection built, setting up event handlers...");
 
                 // イベントハンドラー登録
                 SetupEventHandlers();
 
+                Logger.LogInfo("?? Starting connection...");
+
                 // サーバーに接続
                 await _connection.StartAsync();
 
+                Logger.LogInfo($"? Connection established. State: {_connection.State}");
+                Logger.LogInfo($"?? Creating lobby...");
+
                 // ロビー作成
-                LobbyCode = await _connection.InvokeAsync<string>("CreateLobby", playerName ?? "Host");
+                LobbyCode = await _connection.InvokeAsync<string>("CreateLobby", hostName);
                 CurrentPlayerCount = 1;
 
-                Logger.LogInfo($"SignalR connected to {ServerUrl}, Lobby: {LobbyCode}");
-                return (true, null, ServerUrl, LobbyCode);
+                Logger.LogInfo($"? Lobby created successfully! Code: {LobbyCode}");
+                return (true, null, LobbyCode);
             }
             catch (Exception ex)
             {
+                Logger.LogError($"? Failed to create lobby: {ex.Message}");
                 Logger.LogError(ex);
-                return (false, ex.Message, null, string.Empty);
+                return (false, ex.Message, string.Empty);
             }
         }
 

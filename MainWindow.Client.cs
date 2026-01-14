@@ -34,11 +34,17 @@ namespace Kuiz
             }
 
             TxtJoinStatus.Text = "接続中...";
+            BtnJoinConnect.IsEnabled = false;
 
             // Always use Railway server
             var serverUrl = _appConfig.Config.ServerUrl;
             
-            Logger.LogInfo($"Attempting to connect to server: {serverUrl}");
+            Logger.LogInfo($"==========================================");
+            Logger.LogInfo($"?? JOIN LOBBY ATTEMPT");
+            Logger.LogInfo($"   Player: {name}");
+            Logger.LogInfo($"   Lobby Code: {lobbyCode}");
+            Logger.LogInfo($"   Server: {serverUrl}");
+            Logger.LogInfo($"==========================================");
 
             try
             {
@@ -47,23 +53,31 @@ namespace Kuiz
 
                 if (success)
                 {
+                    Logger.LogInfo("? Successfully joined lobby!");
                     TxtJoinStatus.Text = "ロビーに参加しました！";
                     _profileService.Save(name);
                     
                     // Setup SignalR event handlers
                     SetupSignalRClientHandlers();
                     
+                    // Wait a moment before switching panels
+                    await Task.Delay(500);
+                    
                     ShowPanel(GamePanel);
                 }
                 else
                 {
-                    TxtJoinStatus.Text = "ロビーへの参加に失敗しました";
+                    Logger.LogInfo("? Failed to join lobby - server returned false");
+                    TxtJoinStatus.Text = "ロビーが見つかりません。コードを確認してください";
+                    BtnJoinConnect.IsEnabled = true;
                 }
             }
             catch (Exception ex)
             {
-                TxtJoinStatus.Text = "エラー: サーバーに接続できません";
+                Logger.LogError($"? Exception during join: {ex.Message}");
                 Logger.LogError(ex);
+                TxtJoinStatus.Text = $"エラー: {ex.Message}";
+                BtnJoinConnect.IsEnabled = true;
             }
         }
 

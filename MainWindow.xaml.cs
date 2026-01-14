@@ -24,7 +24,7 @@ namespace Kuiz
         private readonly ProfileService _profileService = new();
         private readonly QuestionService _questionService = new();
         private readonly GameStateService _gameState = new();
-        private readonly HostService _hostService = new();
+        private readonly SignalRHostService _hostService = new();
         private readonly HttpClient _httpClient = new();
         private readonly ThemeService _themeService = ThemeService.Instance;
         private readonly SoundService _soundService = SoundService.Instance;

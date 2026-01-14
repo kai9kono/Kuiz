@@ -294,16 +294,27 @@ namespace Kuiz
 
         private async Task StartHostAsync()
         {
-            var (success, error, actualUrl, lobbyCode) = await _hostService.StartAsync();
+            var hostName = _profileService.PlayerName;
+            if (string.IsNullOrWhiteSpace(hostName))
+            {
+                hostName = "Host";
+                _profileService.Save(hostName);
+            }
+
+            // Use Railway server
+            var serverUrl = _appConfig.Config.ServerUrl;
+            Logger.LogInfo($"?? Creating lobby on server: {serverUrl}");
+
+            var (success, error, lobbyCode) = await _hostService.CreateLobbyAsync(serverUrl, hostName);
 
             if (!success)
             {
-                TxtGameStatus.Text = "Failed to start listener: " + error;
-
-                if (error?.Contains("Access denied") == true)
+                TxtGameStatus.Text = "Failed to create lobby: " + error;
+                Logger.LogError($"Failed to create lobby: {error}");
+                if (error != null)
                 {
                     try { Clipboard.SetText(error); } catch { }
-                    MessageBox.Show(error, "Permission required", MessageBoxButton.OK, MessageBoxImage.Warning);
+                    MessageBox.Show(error, "ロビー作成エラー", MessageBoxButton.OK, MessageBoxImage.Warning);
                 }
                 return;
             }
@@ -320,13 +331,6 @@ namespace Kuiz
                 UpdatePlayerCountDisplay();
             });
 
-            var hostName = _profileService.PlayerName;
-            if (string.IsNullOrWhiteSpace(hostName))
-            {
-                hostName = "Host";
-                _profileService.Save(hostName);
-            }
-
             if (string.IsNullOrWhiteSpace(TxtJoinPlayerName.Text))
             {
                 TxtJoinPlayerName.Text = hostName;
@@ -341,7 +345,7 @@ namespace Kuiz
         private void UpdatePlayerCountDisplay()
         {
             var count = _gameState.LobbyPlayers.Count;
-            TxtPlayerCount.Text = $"({count}/{HostService.MaxPlayers})";
+            TxtPlayerCount.Text = $"({count}/{SignalRHostService.MaxPlayers})";
         }
         
         private void TxtLobbyCode_Click(object sender, System.Windows.Input.MouseButtonEventArgs e)
