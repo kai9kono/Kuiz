@@ -35,6 +35,7 @@
 </ItemGroup>
 
   <ItemGroup>
+    <PackageReference Include="FuzzySharp" Version="2.0.2" />
     <PackageReference Include="Microsoft.AspNetCore.SignalR.Client" Version="10.0.2" />
     <PackageReference Include="Npgsql" Version="10.0.1" />
     <PackageReference Include="MaterialDesignThemes" Version="4.5.0" />

@@ -37,7 +37,7 @@ namespace Kuiz
 
             // Try localhost:5000 as default host URL
             var hostUrl = "http://localhost:5000/";
-            var reg = new { name, lobbyCode };
+            var reg = new { name, lobbyCode, version = AppVersion.Version };
             var content = new StringContent(JsonSerializer.Serialize(reg), Encoding.UTF8, "application/json");
 
             try
@@ -57,6 +57,34 @@ namespace Kuiz
                     // Start new poll loop
                     _pollStateCts = new CancellationTokenSource();
                     _ = PollStateLoopAsync(hostUrl, _pollStateCts.Token);
+                }
+                else if (res.StatusCode == System.Net.HttpStatusCode.BadRequest)
+                {
+                    var errorJson = await res.Content.ReadAsStringAsync();
+                    try
+                    {
+                        var errorObj = JsonSerializer.Deserialize<JsonElement>(errorJson);
+                        if (errorObj.TryGetProperty("error", out var errorMsg))
+                        {
+                            var msg = errorMsg.GetString();
+                            if (msg == "Version mismatch")
+                            {
+                                TxtJoinStatus.Text = "バージョンが一致しません。アプリを更新してください";
+                            }
+                            else
+                            {
+                                TxtJoinStatus.Text = "参加できませんでした";
+                            }
+                        }
+                        else
+                        {
+                            TxtJoinStatus.Text = "参加できませんでした";
+                        }
+                    }
+                    catch
+                    {
+                        TxtJoinStatus.Text = "参加できませんでした";
+                    }
                 }
                 else if (res.StatusCode == System.Net.HttpStatusCode.Forbidden)
                 {

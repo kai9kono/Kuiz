@@ -336,6 +336,18 @@ namespace Kuiz.Services
                 var name = nameProp.GetString();
                 var code = codeProp.GetString();
                 
+                // Check version if provided
+                if (obj.TryGetProperty("version", out var versionProp))
+                {
+                    var clientVersion = versionProp.GetString();
+                    if (clientVersion != Kuiz.AppVersion.Version)
+                    {
+                        context.Response.StatusCode = 400;
+                        await WriteJsonResponseAsync(context, new { error = "Version mismatch" });
+                        return;
+                    }
+                }
+                
                 if (code != LobbyCode)
                 {
                     context.Response.StatusCode = 403;

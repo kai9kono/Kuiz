@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Windows.Media;
+using FuzzySharp;
 using Kuiz.Models;
 
 namespace Kuiz.Services
@@ -130,10 +131,25 @@ namespace Kuiz.Services
         {
             if (CurrentQuestion == null) return false;
 
+            // FuzzySharpで類似度判定（閾値85%）
+            var correctAnswer = CurrentQuestion.Answer?.Trim() ?? "";
+            var userAnswer = answer.Trim();
+            
+            // まず完全一致を確認（大文字小文字を無視）
             bool correct = string.Equals(
-                CurrentQuestion.Answer?.Trim(),
-                answer.Trim(),
+                correctAnswer,
+                userAnswer,
                 StringComparison.OrdinalIgnoreCase);
+            
+            // 完全一致しない場合はファジーマッチング
+            if (!correct && !string.IsNullOrEmpty(correctAnswer))
+            {
+                int similarity = Fuzz.Ratio(correctAnswer.ToLower(), userAnswer.ToLower());
+                Logger.LogInfo($"Answer fuzzy match: '{userAnswer}' vs '{correctAnswer}' = {similarity}%");
+                
+                // 85%以上の類似度で正解と判定
+                correct = similarity >= 85;
+            }
 
             if (correct)
             {
