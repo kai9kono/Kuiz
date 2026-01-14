@@ -21,8 +21,18 @@ public class QuestionController : ControllerBase
     [HttpGet]
     public async Task<IActionResult> GetAll()
     {
-        var questions = await _questionService.GetAllQuestionsAsync();
-        return Ok(questions);
+        try
+        {
+            Console.WriteLine("?? GetAll called");
+            var questions = await _questionService.GetAllQuestionsAsync();
+            Console.WriteLine($"? Retrieved {questions.Count} questions");
+            return Ok(questions);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"? Error getting all questions: {ex}");
+            return StatusCode(500, new { error = "Failed to retrieve questions", details = ex.Message, stackTrace = ex.StackTrace });
+        }
     }
 
     /// <summary>

@@ -46,23 +46,41 @@ public class QuestionService
     {
         var questions = new List<Question>();
         
-        await using var conn = new NpgsqlConnection(_connectionString);
-        await conn.OpenAsync();
-        
-        await using var cmd = new NpgsqlCommand("SELECT id, text, answer, author, created_at, played_at FROM questions ORDER BY id", conn);
-        await using var reader = await cmd.ExecuteReaderAsync();
-        
-        while (await reader.ReadAsync())
+        try
         {
-            questions.Add(new Question
+            Console.WriteLine("?? Connecting to database...");
+            Console.WriteLine($"   Connection string: {_connectionString.Replace(_connectionString.Split("Password=")[1].Split(";")[0], "***")}");
+            
+            await using var conn = new NpgsqlConnection(_connectionString);
+            await conn.OpenAsync();
+            
+            Console.WriteLine("? Database connection opened");
+            
+            await using var cmd = new NpgsqlCommand("SELECT id, text, answer, author, created_at, played_at FROM questions ORDER BY id", conn);
+            await using var reader = await cmd.ExecuteReaderAsync();
+            
+            Console.WriteLine("? Query executed");
+            
+            while (await reader.ReadAsync())
             {
-                Id = reader.GetInt32(0),
-                Text = reader.GetString(1),
-                Answer = reader.GetString(2),
-                Author = reader.IsDBNull(3) ? null : reader.GetString(3),
-                CreatedAt = reader.GetDateTime(4),
-                PlayedAt = reader.IsDBNull(5) ? null : reader.GetDateTime(5)
-            });
+                questions.Add(new Question
+                {
+                    Id = reader.GetInt32(0),
+                    Text = reader.GetString(1),
+                    Answer = reader.GetString(2),
+                    Author = reader.IsDBNull(3) ? null : reader.GetString(3),
+                    CreatedAt = reader.GetDateTime(4),
+                    PlayedAt = reader.IsDBNull(5) ? null : reader.GetDateTime(5)
+                });
+            }
+            
+            Console.WriteLine($"? Retrieved {questions.Count} questions from database");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"? Database error: {ex.Message}");
+            Console.WriteLine($"   Stack trace: {ex.StackTrace}");
+            throw;
         }
         
         return questions;

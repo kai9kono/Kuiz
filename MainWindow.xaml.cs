@@ -45,6 +45,13 @@ namespace Kuiz
 
         private void InitializeServices()
         {
+            // ログファイルの場所を記録
+            Logger.LogInfo("===========================================");
+            Logger.LogInfo("🚀 Kuiz Application Starting");
+            Logger.LogInfo($"📁 Log file: {Logger.GetLogFilePath()}");
+            Logger.LogInfo($"📁 Log directory: {Logger.GetLogDirectory()}");
+            Logger.LogInfo("===========================================");
+            
             _profileService.Load();
 
             // プレイヤー名をテキストボックスに設定（デフォルト：ちびすけ明太子）
@@ -79,6 +86,9 @@ namespace Kuiz
                 SetBuzzImage("unpressed");
             }
             catch { }
+            
+            // API接続テストを実行
+            _ = TestApiConnectionOnStartup();
         }
         
         // Sound event handlers for buttons
@@ -252,6 +262,35 @@ namespace Kuiz
 
             ((System.Windows.Controls.Grid)this.Content).Children.Add(errorOverlay);
             System.Windows.Controls.Panel.SetZIndex(errorOverlay, 100);
+        }
+        
+        private async Task TestApiConnectionOnStartup()
+        {
+            try
+            {
+                Logger.LogInfo("🔍 Testing API connection on startup...");
+                await _questionService.TestConnectionAsync();
+                Logger.LogInfo("✅ API connection test successful");
+            }
+            catch (Exception ex)
+            {
+                Logger.LogError(ex);
+                Logger.LogError(new Exception($"⚠️ API connection test failed on startup: {ex.Message}"));
+                
+                // ユーザーにエラーを表示（メインスレッドで）
+                Dispatcher.Invoke(() =>
+                {
+                    MessageBox.Show(
+                        $"Railway APIに接続できませんでした。\n\n" +
+                        $"エラー: {ex.Message}\n\n" +
+                        $"インターネット接続を確認してください。\n" +
+                        $"ログファイル: {Logger.GetLogFilePath()}",
+                        "接続エラー",
+                        MessageBoxButton.OK,
+                        MessageBoxImage.Warning
+                    );
+                });
+            }
         }
     }
 }

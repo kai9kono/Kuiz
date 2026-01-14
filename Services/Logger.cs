@@ -43,6 +43,16 @@ namespace Kuiz
         {
             Write("ERROR", message);
         }
+        
+        public static string GetLogFilePath()
+        {
+            return _file;
+        }
+        
+        public static string GetLogDirectory()
+        {
+            return _dir;
+        }
 
         private static void Write(string level, string message)
         {

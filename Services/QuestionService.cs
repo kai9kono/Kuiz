@@ -15,11 +15,8 @@ namespace Kuiz.Services
     public class QuestionService
     {
         // Railway APIのURL
-#if DEBUG
-        private const string ApiUrl = "http://localhost:8080/api/question";
-#else
+        // DEBUGモードでもRailway URLを使用（ローカルサーバーがない場合）
         private const string ApiUrl = "https://kuiz-production.up.railway.app/api/question";
-#endif
 
         private static readonly HttpClient _httpClient = new();
         
@@ -30,19 +27,24 @@ namespace Kuiz.Services
             try
             {
                 progress?.Report(10);
-                Logger.LogInfo($"Loading questions from {ApiUrl}");
+                Logger.LogInfo($"?? Loading questions from {ApiUrl}");
                 
                 var response = await _httpClient.GetAsync(ApiUrl);
+                
+                Logger.LogInfo($"?? Response status: {response.StatusCode}");
                 
                 if (!response.IsSuccessStatusCode)
                 {
                     var error = await response.Content.ReadAsStringAsync();
+                    Logger.LogError(new Exception($"? Failed to load questions: {response.StatusCode} - {error}"));
                     throw new Exception($"Failed to load questions: {response.StatusCode} - {error}");
                 }
                 
                 progress?.Report(50);
                 
                 var json = await response.Content.ReadAsStringAsync();
+                Logger.LogInfo($"?? Response JSON (first 200 chars): {json.Substring(0, Math.Min(200, json.Length))}...");
+                
                 var questions = JsonSerializer.Deserialize<List<Question>>(json, new JsonSerializerOptions 
                 { 
                     PropertyNameCaseInsensitive = true 
@@ -51,7 +53,7 @@ namespace Kuiz.Services
                 progress?.Report(90);
                 
                 Questions = questions;
-                Logger.LogInfo($"Loaded {questions.Count} questions from Railway");
+                Logger.LogInfo($"? Loaded {questions.Count} questions from Railway");
                 
                 progress?.Report(100);
                 return questions;
@@ -59,6 +61,7 @@ namespace Kuiz.Services
             catch (Exception ex)
             {
                 Logger.LogError(ex);
+                Logger.LogError(new Exception($"?? LoadQuestionsAsync failed. Returning empty list. Error: {ex.Message}"));
                 // フォールバック：空のリストを返す
                 Questions = new List<Question>();
                 return Questions;
@@ -125,24 +128,39 @@ namespace Kuiz.Services
         {
             try
             {
+                Logger.LogInfo($"?? Adding question to API: {ApiUrl}");
+                Logger.LogInfo($"   Text: {text}");
+                Logger.LogInfo($"   Answer: {answer}");
+                Logger.LogInfo($"   Author: {author}");
+                
                 var dto = new { Text = text, Answer = answer, Author = author };
                 var json = JsonSerializer.Serialize(dto);
                 var content = new StringContent(json, Encoding.UTF8, "application/json");
                 
                 var response = await _httpClient.PostAsync(ApiUrl, content);
                 
+                Logger.LogInfo($"?? Response status: {response.StatusCode}");
+                
                 if (response.IsSuccessStatusCode)
                 {
+                    var responseContent = await response.Content.ReadAsStringAsync();
+                    Logger.LogInfo($"? Question added successfully. Response: {responseContent}");
+                    
                     // リストを再読み込み
                     await LoadQuestionsAsync();
                     return 1; // 成功を示す
                 }
-                
-                return 0;
+                else
+                {
+                    var error = await response.Content.ReadAsStringAsync();
+                    Logger.LogError(new Exception($"? Failed to add question: {response.StatusCode} - {error}"));
+                    return 0;
+                }
             }
             catch (Exception ex)
             {
                 Logger.LogError(ex);
+                Logger.LogError(new Exception($"?? AddQuestionAsync exception: {ex.Message}"));
                 return 0;
             }
         }
@@ -191,15 +209,37 @@ namespace Kuiz.Services
         {
             try
             {
-                var response = await _httpClient.GetAsync(ApiUrl.Replace("/api/question", "/health"));
-                if (!response.IsSuccessStatusCode)
+                Logger.LogInfo($"?? Testing connection to Railway API: {ApiUrl}");
+                
+                // まずヘルスチェックを試す
+                var healthUrl = ApiUrl.Replace("/api/question", "/health");
+                Logger.LogInfo($"   Health check URL: {healthUrl}");
+                
+                var healthResponse = await _httpClient.GetAsync(healthUrl);
+                Logger.LogInfo($"   Health check status: {healthResponse.StatusCode}");
+                
+                if (!healthResponse.IsSuccessStatusCode)
                 {
-                    throw new Exception($"Server health check failed: {response.StatusCode}");
+                    Logger.LogError(new Exception($"? Server health check failed: {healthResponse.StatusCode}"));
                 }
+                
+                // 次にAPIエンドポイントを直接テスト
+                Logger.LogInfo($"   Testing API endpoint: {ApiUrl}");
+                var apiResponse = await _httpClient.GetAsync(ApiUrl);
+                Logger.LogInfo($"   API endpoint status: {apiResponse.StatusCode}");
+                
+                if (!apiResponse.IsSuccessStatusCode)
+                {
+                    var error = await apiResponse.Content.ReadAsStringAsync();
+                    throw new Exception($"API endpoint check failed: {apiResponse.StatusCode} - {error}");
+                }
+                
+                Logger.LogInfo($"? Connection test successful!");
             }
             catch (Exception ex)
             {
                 Logger.LogError(ex);
+                Logger.LogError(new Exception($"?? TestConnectionAsync failed: {ex.Message}"));
                 throw new Exception($"Cannot connect to Railway server: {ex.Message}", ex);
             }
         }
