@@ -3,10 +3,1572 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-        xmlns:local="clr-namespace:Kuiz"
+        xmlns:materialDesign="http://materialdesigninxaml.net/winfx/xaml/themes"
+        xmlns:pack="clr-namespace:MaterialDesignThemes.Wpf;assembly=MaterialDesignThemes.Wpf"
         mc:Ignorable="d"
-        Title="MainWindow" Height="450" Width="800">
-    <Grid>
+        Title="Kuiz" Height="1080" Width="1920" 
+        WindowStyle="None" ResizeMode="NoResize" WindowStartupLocation="Manual" 
+        Left="0" Top="0" 
+        PreviewKeyDown="Window_PreviewKeyDown" Closing="Window_Closing"
+        Background="{Binding BackgroundColor}"
+        BorderThickness="0"
+        AllowsTransparency="False">
+    <Window.Resources>
+        <!-- Style for title Host/Join buttons: hand cursor and light gray on hover -->
+        <Style x:Key="TitleHoverButton" TargetType="Button" BasedOn="{StaticResource MaterialDesignRaisedButton}">
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="Foreground" Value="{Binding ForegroundColor}" />
+            <Setter Property="BorderThickness" Value="0" />
+            <!-- remove material design drop shadow -->
+            <Setter Property="materialDesign:ShadowAssist.ShadowDepth" Value="Depth0" />
+            <EventSetter Event="MouseEnter" Handler="Button_MouseEnter" />
+            <EventSetter Event="PreviewMouseLeftButtonDown" Handler="Button_PreviewMouseLeftButtonDown" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="RootBorder" 
+                                Background="{TemplateBinding Background}" 
+                                BorderBrush="Transparent" 
+                                BorderThickness="0" 
+                                CornerRadius="8" 
+                                Padding="{TemplateBinding Padding}">
+                            <Grid>
+                                <!-- flat background overlay for hover effect -->
+                                <Rectangle x:Name="HoverOverlay" 
+                                          Fill="{Binding DataContext.ButtonHoverColor, RelativeSource={RelativeSource AncestorType=Window}}" 
+                                          Opacity="0" />
+                                
+                                <!-- animated accent line (left edge) -->
+                                <Rectangle x:Name="AccentLine" 
+                                          Width="4" 
+                                          HorizontalAlignment="Left" 
+                                          Fill="{Binding DataContext.AccentColor, RelativeSource={RelativeSource AncestorType=Window}}" 
+                                          Opacity="0">
+                                    <Rectangle.RenderTransform>
+                                        <TranslateTransform Y="0" />
+                                    </Rectangle.RenderTransform>
+                                </Rectangle>
+ 
+                                <ContentPresenter HorizontalAlignment="Center" 
+                                                VerticalAlignment="Center" 
+                                                RecognizesAccessKey="True" 
+                                                Panel.ZIndex="1"
+                                                TextElement.Foreground="{TemplateBinding Foreground}" />
+                            </Grid>
+                        </Border>
+
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Trigger.EnterActions>
+                                    <BeginStoryboard>
+                                        <Storyboard>
+                                            <!-- fade in background overlay -->
+                                            <DoubleAnimation Storyboard.TargetName="HoverOverlay" 
+                                                           Storyboard.TargetProperty="Opacity" 
+                                                           To="0.2" Duration="0:0:0.2" />
+                                            <!-- accent line slides in from top -->
+                                            <DoubleAnimation Storyboard.TargetName="AccentLine" 
+                                                           Storyboard.TargetProperty="Opacity" 
+                                                           To="1" Duration="0:0:0.2" />
+                                            <DoubleAnimation Storyboard.TargetName="AccentLine" 
+                                                           Storyboard.TargetProperty="(UIElement.RenderTransform).(TranslateTransform.Y)" 
+                                                           From="-96" To="0" Duration="0:0:0.3">
+                                                <DoubleAnimation.EasingFunction>
+                                                    <CubicEase EasingMode="EaseOut" />
+                                                </DoubleAnimation.EasingFunction>
+                                            </DoubleAnimation>
+                                        </Storyboard>
+                                    </BeginStoryboard>
+                                </Trigger.EnterActions>
+                                <Trigger.ExitActions>
+                                    <BeginStoryboard>
+                                        <Storyboard>
+                                            <!-- fade out background overlay -->
+                                            <DoubleAnimation Storyboard.TargetName="HoverOverlay" 
+                                                           Storyboard.TargetProperty="Opacity" 
+                                                           To="0" Duration="0:0:0.2" />
+                                            
+                                            <!-- accent line slides out to bottom -->
+                                            <DoubleAnimation Storyboard.TargetName="AccentLine" 
+                                                           Storyboard.TargetProperty="Opacity" 
+                                                           To="0" Duration="0:0:0.2" BeginTime="0:0:0.1" />
+                                            <DoubleAnimation Storyboard.TargetName="AccentLine" 
+                                                           Storyboard.TargetProperty="(UIElement.RenderTransform).(TranslateTransform.Y)" 
+                                                           To="96" Duration="0:0:0.3">
+                                                <DoubleAnimation.EasingFunction>
+                                                    <CubicEase EasingMode="EaseIn" />
+                                                </DoubleAnimation.EasingFunction>
+                                            </DoubleAnimation>
+                                        </Storyboard>
+                                    </BeginStoryboard>
+                                </Trigger.ExitActions>
+                            </Trigger>
+                            <Trigger Property="IsPressed" Value="True">
+                                <Setter TargetName="RootBorder" 
+                                       Property="Background" 
+                                       Value="{Binding DataContext.ButtonPressedColor, RelativeSource={RelativeSource AncestorType=Window}}" />
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                     </ControlTemplate>
+                 </Setter.Value>
+             </Setter>
+
+            <Style.Triggers>
+                <Trigger Property="IsEnabled" Value="False">
+                    <Setter Property="Opacity" Value="0.5" />
+                </Trigger>
+            </Style.Triggers>
+        </Style>
+        
+        <!-- Style for settings button with rotation on hover -->
+        <Style x:Key="SettingsButton" TargetType="Button" BasedOn="{StaticResource MaterialDesignToolButton}">
+            <Setter Property="RenderTransformOrigin" Value="0.5,0.5" />
+            <Setter Property="RenderTransform">
+                <Setter.Value>
+                    <RotateTransform Angle="0" />
+                </Setter.Value>
+            </Setter>
+            <EventSetter Event="MouseEnter" Handler="Button_MouseEnter" />
+            <EventSetter Event="PreviewMouseLeftButtonDown" Handler="Button_PreviewMouseLeftButtonDown" />
+            <Style.Triggers>
+                <Trigger Property="IsMouseOver" Value="True">
+                    <Trigger.EnterActions>
+                        <BeginStoryboard>
+                            <Storyboard>
+                                <DoubleAnimation Storyboard.TargetProperty="(UIElement.RenderTransform).(RotateTransform.Angle)"
+                                               To="180" Duration="0:0:0.5">
+                                    <DoubleAnimation.EasingFunction>
+                                        <CubicEase EasingMode="EaseOut" />
+                                    </DoubleAnimation.EasingFunction>
+                                </DoubleAnimation>
+                            </Storyboard>
+                        </BeginStoryboard>
+                    </Trigger.EnterActions>
+                    <Trigger.ExitActions>
+                        <BeginStoryboard>
+                            <Storyboard>
+                                <DoubleAnimation Storyboard.TargetProperty="(UIElement.RenderTransform).(RotateTransform.Angle)"
+                                               To="0" Duration="0:0:0.5">
+                                    <DoubleAnimation.EasingFunction>
+                                        <CubicEase EasingMode="EaseOut" />
+                                    </DoubleAnimation.EasingFunction>
+                                </DoubleAnimation>
+                            </Storyboard>
+                        </BeginStoryboard>
+                    </Trigger.ExitActions>
+                </Trigger>
+            </Style.Triggers>
+        </Style>
+        
+        <!-- Style for numeric-only textboxes -->
+        <Style x:Key="NumericTextBox" TargetType="TextBox" BasedOn="{StaticResource MaterialDesignOutlinedTextBox}">
+            <Setter Property="materialDesign:TextFieldAssist.UnderlineBrush" Value="#2196F3" />
+            <Setter Property="materialDesign:HintAssist.FloatingScale" Value="1.0" />
+            <Setter Property="materialDesign:HintAssist.FloatingOffset" Value="0,-24" />
+            <Setter Property="materialDesign:HintAssist.Foreground" Value="{Binding SecondaryTextColor}" />
+            <Setter Property="materialDesign:HintAssist.Background" Value="Transparent" />
+            <EventSetter Event="PreviewTextInput" Handler="NumericTextBox_PreviewTextInput" />
+            <EventSetter Event="PreviewKeyDown" Handler="NumericTextBox_PreviewKeyDown" />
+        </Style>
+        
+        <!-- Style for general textboxes with dark mode support -->
+        <Style x:Key="ThemedTextBox" TargetType="TextBox">
+            <Setter Property="Foreground" Value="{Binding ForegroundColor}" />
+            <Setter Property="Background" Value="{Binding BackgroundColor}" />
+            <Setter Property="CaretBrush" Value="{Binding ForegroundColor}" />
+            <Setter Property="BorderBrush" Value="{Binding BorderColor}" />
+            <Setter Property="BorderThickness" Value="0,0,0,2" />
+            <Setter Property="Padding" Value="8,8,8,8" />
+            <Setter Property="FontSize" Value="16" />
+            <Setter Property="VerticalContentAlignment" Value="Center" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="TextBox">
+                        <Grid>
+                            <Border x:Name="border" 
+                                    Background="{TemplateBinding Background}" 
+                                    BorderBrush="{TemplateBinding BorderBrush}" 
+                                    BorderThickness="{TemplateBinding BorderThickness}"
+                                    SnapsToDevicePixels="True">
+                                <ScrollViewer x:Name="PART_ContentHost" 
+                                            Focusable="false" 
+                                            HorizontalScrollBarVisibility="Hidden" 
+                                            VerticalScrollBarVisibility="Hidden"
+                                            Margin="{TemplateBinding Padding}" />
+                            </Border>
+                            <TextBlock x:Name="Placeholder" 
+                                     Text="{TemplateBinding Tag}"
+                                     Foreground="{Binding DataContext.SecondaryTextColor, RelativeSource={RelativeSource AncestorType=Window}}"
+                                     IsHitTestVisible="False"
+                                     Margin="{TemplateBinding Padding}"
+                                     VerticalAlignment="Center"
+                                     Opacity="0.6">
+                                <TextBlock.Style>
+                                    <Style TargetType="TextBlock">
+                                        <Setter Property="Visibility" Value="Collapsed"/>
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding Text, RelativeSource={RelativeSource TemplatedParent}}" Value="">
+                                                <Setter Property="Visibility" Value="Visible"/>
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </TextBlock.Style>
+                            </TextBlock>
+                        </Grid>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="border" Property="BorderBrush" Value="{Binding DataContext.AccentColor, RelativeSource={RelativeSource AncestorType=Window}}" />
+                            </Trigger>
+                            <Trigger Property="IsFocused" Value="True">
+                                <Setter TargetName="border" Property="BorderBrush" Value="{Binding DataContext.AccentColor, RelativeSource={RelativeSource AncestorType=Window}}" />
+                                <Setter TargetName="border" Property="BorderThickness" Value="0,0,0,3" />
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+        
+        <!-- Style for numeric textboxes without underline -->
+        <Style x:Key="NumericThemedTextBox" TargetType="TextBox">
+            <Setter Property="Foreground" Value="{Binding ForegroundColor}" />
+            <Setter Property="Background" Value="{Binding BackgroundColor}" />
+            <Setter Property="CaretBrush" Value="{Binding ForegroundColor}" />
+            <Setter Property="BorderBrush" Value="Transparent" />
+            <Setter Property="BorderThickness" Value="0" />
+            <Setter Property="Padding" Value="8,8,8,8" />
+            <Setter Property="FontSize" Value="24" />
+            <Setter Property="HorizontalContentAlignment" Value="Center" />
+            <Setter Property="VerticalContentAlignment" Value="Center" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="TextBox">
+                        <Grid>
+                            <Border x:Name="border" 
+                                    Background="{TemplateBinding Background}" 
+                                    BorderBrush="{TemplateBinding BorderBrush}" 
+                                    BorderThickness="{TemplateBinding BorderThickness}"
+                                    SnapsToDevicePixels="True">
+                                <ScrollViewer x:Name="PART_ContentHost" 
+                                            Focusable="false" 
+                                            HorizontalScrollBarVisibility="Hidden" 
+                                            VerticalScrollBarVisibility="Hidden"
+                                            Margin="{TemplateBinding Padding}" />
+                            </Border>
+                            <TextBlock x:Name="Placeholder" 
+                                     Text="{TemplateBinding Tag}"
+                                     Foreground="{Binding DataContext.SecondaryTextColor, RelativeSource={RelativeSource AncestorType=Window}}"
+                                     IsHitTestVisible="False"
+                                     Margin="{TemplateBinding Padding}"
+                                     HorizontalAlignment="Center"
+                                     VerticalAlignment="Center"
+                                     Opacity="0.6">
+                                <TextBlock.Style>
+                                    <Style TargetType="TextBlock">
+                                        <Setter Property="Visibility" Value="Collapsed"/>
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding Text, RelativeSource={RelativeSource TemplatedParent}}" Value="">
+                                                <Setter Property="Visibility" Value="Visible"/>
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </TextBlock.Style>
+                            </TextBlock>
+                        </Grid>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+        
+        <!-- Style for lobby player list items without hover effect -->
+        <Style x:Key="NoHoverListBoxItem" TargetType="ListBoxItem">
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="ListBoxItem">
+                        <ContentPresenter />
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+        
+        <!-- Style for icon buttons with sound effects -->
+        <Style x:Key="SoundToolButton" TargetType="Button" BasedOn="{StaticResource MaterialDesignToolButton}">
+            <EventSetter Event="MouseEnter" Handler="Button_MouseEnter" />
+            <EventSetter Event="PreviewMouseLeftButtonDown" Handler="Button_PreviewMouseLeftButtonDown" />
+        </Style>
+        
+        <!-- Style for close/exit buttons with hover animation -->
+        <Style x:Key="CloseButton" TargetType="Button" BasedOn="{StaticResource SoundToolButton}">
+            <Setter Property="RenderTransformOrigin" Value="0.5,0.5" />
+            <Setter Property="RenderTransform">
+                <Setter.Value>
+                    <ScaleTransform ScaleX="1" ScaleY="1" />
+                </Setter.Value>
+            </Setter>
+            <Style.Triggers>
+                <Trigger Property="IsMouseOver" Value="True">
+                    <Trigger.EnterActions>
+                        <BeginStoryboard>
+                            <Storyboard>
+                                <DoubleAnimation Storyboard.TargetProperty="(UIElement.RenderTransform).(ScaleTransform.ScaleX)"
+                                               To="1.15" Duration="0:0:0.15">
+                                    <DoubleAnimation.EasingFunction>
+                                        <CubicEase EasingMode="EaseOut" />
+                                    </DoubleAnimation.EasingFunction>
+                                </DoubleAnimation>
+                                <DoubleAnimation Storyboard.TargetProperty="(UIElement.RenderTransform).(ScaleTransform.ScaleY)"
+                                               To="1.15" Duration="0:0:0.15">
+                                    <DoubleAnimation.EasingFunction>
+                                        <CubicEase EasingMode="EaseOut" />
+                                    </DoubleAnimation.EasingFunction>
+                                </DoubleAnimation>
+                            </Storyboard>
+                        </BeginStoryboard>
+                    </Trigger.EnterActions>
+                    <Trigger.ExitActions>
+                        <BeginStoryboard>
+                            <Storyboard>
+                                <DoubleAnimation Storyboard.TargetProperty="(UIElement.RenderTransform).(ScaleTransform.ScaleX)"
+                                               To="1.0" Duration="0:0:0.15">
+                                    <DoubleAnimation.EasingFunction>
+                                        <CubicEase EasingMode="EaseOut" />
+                                    </DoubleAnimation.EasingFunction>
+                                </DoubleAnimation>
+                                <DoubleAnimation Storyboard.TargetProperty="(UIElement.RenderTransform).(ScaleTransform.ScaleY)"
+                                               To="1.0" Duration="0:0:0.15">
+                                    <DoubleAnimation.EasingFunction>
+                                        <CubicEase EasingMode="EaseOut" />
+                                    </DoubleAnimation.EasingFunction>
+                                </DoubleAnimation>
+                            </Storyboard>
+                        </BeginStoryboard>
+                    </Trigger.ExitActions>
+                </Trigger>
+            </Style.Triggers>
+        </Style>
+        
+        <!-- Style for raised buttons with sound effects -->
+        <Style x:Key="SoundRaisedButton" TargetType="Button" BasedOn="{StaticResource MaterialDesignRaisedButton}">
+            <EventSetter Event="MouseEnter" Handler="Button_MouseEnter" />
+            <EventSetter Event="PreviewMouseLeftButtonDown" Handler="Button_PreviewMouseLeftButtonDown" />
+        </Style>
+        
+        <!-- Style for flat buttons with sound effects -->
+        <Style x:Key="SoundFlatButton" TargetType="Button" BasedOn="{StaticResource MaterialDesignFlatButton}">
+            <EventSetter Event="MouseEnter" Handler="Button_MouseEnter" />
+            <EventSetter Event="PreviewMouseLeftButtonDown" Handler="Button_PreviewMouseLeftButtonDown" />
+        </Style>
+    </Window.Resources>
+    <Grid Background="{Binding BackgroundColor}">
+        <!-- Title Panel -->
+        <Grid x:Name="TitlePanel" d:Visibility="Collapsed" Background="Transparent">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+                <StackPanel Grid.ColumnSpan="2" VerticalAlignment="Center" HorizontalAlignment="Center">
+                    <TextBlock Text="Kuiz" FontSize="56" HorizontalAlignment="Center" Foreground="{Binding ForegroundColor}" />
+                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,24,0,0">
+                        <Button x:Name="BtnTitleHost" Content="ルーム作成" Width="240" Height="96" FontSize="20" Margin="12" Click="BtnTitleHost_Click" Style="{StaticResource TitleHoverButton}" Foreground="{Binding ForegroundColor}" />
+                        <Button x:Name="BtnTitleJoin" Content="ルーム参加" Width="240" Height="96" FontSize="20" Margin="12" Click="BtnTitleJoin_Click" Style="{StaticResource TitleHoverButton}" Foreground="{Binding ForegroundColor}" />
+                    </StackPanel>
+                    <Button x:Name="BtnTitleQuestionManager" Content="問題マネージャー" Width="504" Height="64" FontSize="18" Margin="12,24,12,0" Click="BtnTitleQuestionManager_Click" Style="{StaticResource TitleHoverButton}" Foreground="{Binding ForegroundColor}" />
+                </StackPanel>
+                
+                <!-- Info button (bottom left) -->
+                <Button x:Name="BtnInfo" Click="BtnInfo_Click" 
+                        HorizontalAlignment="Left" VerticalAlignment="Bottom" 
+                        Margin="8,0,0,8" Width="64" Height="64"
+                        Style="{StaticResource SoundToolButton}" 
+                        ToolTip="情報"
+                        Foreground="{Binding ForegroundColor}">
+                    <pack:PackIcon Kind="Information" Width="32" Height="32" />
+                </Button>
+                
+                <StackPanel Grid.Column="1" Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,8,8,0">
+                    <Button x:Name="BtnEditProfile" Click="BtnEditProfile_Click" Visibility="Visible" Width="64" Height="64" Margin="0,0,8,0" Style="{StaticResource SettingsButton}" ToolTip="Settings" Foreground="{Binding ForegroundColor}">
+                        <pack:PackIcon Kind="Cog" Width="28" Height="28" />
+                    </Button>
+                    <Button x:Name="BtnExitGame" Click="BtnExitGame_Click" Visibility="Visible" Width="64" Height="64" Style="{StaticResource CloseButton}" ToolTip="Close" Foreground="{Binding ForegroundColor}">
+                        <pack:PackIcon Kind="Close" Width="24" Height="24" />
+                    </Button>
+                </StackPanel>
+            </Grid>
+        </Grid>
+
+        <!-- Host Setup Panel -->
+        <Grid x:Name="HostPanel" Visibility="Collapsed" Margin="12" Background="Transparent">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" />
+            </Grid.ColumnDefinitions>
+
+            <!-- Back button (top center - slides up to Title) -->
+            <Button x:Name="BtnHostBack" Click="BtnHostBack_Click" 
+                    HorizontalAlignment="Center" VerticalAlignment="Top" 
+                    Margin="0,24,0,0" Width="64" Height="64"
+                    Style="{StaticResource SoundToolButton}" 
+                    ToolTip="タイトルに戻る"
+                    Foreground="{Binding ForegroundColor}">
+                <pack:PackIcon Kind="ChevronUp" Width="36" Height="36" />
+            </Button>
+
+            <!-- Top-right profile/close buttons for HostPanel -->
+            <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,8,8,0">
+                <Button x:Name="BtnEditProfileHost" Click="BtnEditProfile_Click" Visibility="Visible" Width="64" Height="64" Margin="0,0,8,0" Style="{StaticResource SettingsButton}" ToolTip="Settings" Foreground="{Binding ForegroundColor}">
+                    <pack:PackIcon Kind="Cog" Width="28" Height="28" />
+                </Button>
+                <Button x:Name="BtnExitGameHost" Click="BtnExitGame_Click" Visibility="Visible" Width="64" Height="64" Style="{StaticResource CloseButton}" ToolTip="Close" Foreground="{Binding ForegroundColor}">
+                    <pack:PackIcon Kind="Close" Width="24" Height="24" />
+                </Button>
+            </StackPanel>
+
+            <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" Width="520">
+                <TextBlock Text="ホストロビー" FontWeight="Bold" FontSize="28" HorizontalAlignment="Center" Margin="0,0,0,16" Foreground="{Binding ForegroundColor}" />
+                
+                <!-- Lobby Code Display -->
+                <materialDesign:Card Padding="16" Margin="0,0,0,32" UniformCornerRadius="8" Background="{Binding CardBackgroundColor}">
+                    <StackPanel>
+                        <TextBlock Text="ロビーコード" FontSize="14" Foreground="{Binding SecondaryTextColor}" HorizontalAlignment="Center" Margin="0,0,0,8" />
+                        <TextBlock x:Name="TxtLobbyCode" Text="------" FontSize="32" FontWeight="Bold" 
+                                   HorizontalAlignment="Center" FontFamily="Consolas" 
+                                   Foreground="{Binding AccentColor}" Cursor="Hand" 
+                                   ToolTip="クリックしてコピー" MouseLeftButtonDown="TxtLobbyCode_Click" />
+                    </StackPanel>
+                </materialDesign:Card>
+                
+                <!-- Players section -->
+                <StackPanel Margin="0,0,0,32">
+                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,0,0,16">
+                        <pack:PackIcon Kind="AccountMultiple" Width="24" Height="24" VerticalAlignment="Center" Foreground="{Binding SecondaryTextColor}" Margin="0,0,8,0" />
+                        <TextBlock Text="参加プレイヤー" FontSize="18" FontWeight="SemiBold" VerticalAlignment="Center" Foreground="{Binding ForegroundColor}" />
+                        <TextBlock x:Name="TxtPlayerCount" Text="(1/4)" FontSize="16" Foreground="{Binding SecondaryTextColor}" VerticalAlignment="Center" Margin="8,0,0,0" />
+                    </StackPanel>
+                    <ListBox x:Name="ListLobbyPlayers" Height="220" Width="460" HorizontalAlignment="Center" BorderThickness="0" Background="Transparent">
+                            <ListBox.ItemContainerStyle>
+                                <Style TargetType="ListBoxItem" BasedOn="{StaticResource NoHoverListBoxItem}" />
+                            </ListBox.ItemContainerStyle>
+                            <ListBox.ItemTemplate>
+                                <DataTemplate>
+                                    <materialDesign:Card Padding="12" Margin="4" Width="420" UniformCornerRadius="6" Background="{Binding DataContext.CardBackgroundColor, RelativeSource={RelativeSource AncestorType=Window}}">
+                                        <StackPanel Orientation="Horizontal" VerticalAlignment="Center" HorizontalAlignment="Center">
+                                            <Ellipse Width="16" Height="16" Fill="{Binding ColorBrush}" Margin="0,0,12,0" />
+                                            <TextBlock Text="{Binding Name}" VerticalAlignment="Center" FontSize="16" Foreground="{Binding DataContext.ForegroundColor, RelativeSource={RelativeSource AncestorType=Window}}" FontWeight="Medium" />
+                                        </StackPanel>
+                                    </materialDesign:Card>
+                                </DataTemplate>
+                            </ListBox.ItemTemplate>
+                        </ListBox>
+                </StackPanel>
+
+                <!-- Game settings section -->
+                <StackPanel Margin="0,0,0,32">
+                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,0,0,16">
+                        <pack:PackIcon Kind="Cog" Width="24" Height="24" VerticalAlignment="Center" Foreground="{Binding SecondaryTextColor}" Margin="0,0,8,0" />
+                        <TextBlock Text="ゲーム設定" FontSize="18" FontWeight="SemiBold" VerticalAlignment="Center" Foreground="{Binding ForegroundColor}" />
+                    </StackPanel>
+
+                        <StackPanel Margin="0,0,0,16">
+                            <TextBlock Text="勝利正解数" FontSize="14" Foreground="{Binding SecondaryTextColor}" Margin="0,0,0,8" HorizontalAlignment="Center" />
+                            <Grid HorizontalAlignment="Center" Width="220">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="Auto" />
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="Auto" />
+                                </Grid.ColumnDefinitions>
+                                <Button Grid.Column="0" Width="48" Height="48" 
+                                        Style="{StaticResource SoundFlatButton}"
+                                        Click="BtnDecreasePointsToWin_Click"
+                                        Foreground="{Binding ForegroundColor}"
+                                        ToolTip="減らす">
+                                    <pack:PackIcon Kind="ChevronLeft" Width="28" Height="28" />
+                                </Button>
+                                <TextBox x:Name="TxtPointsToWin" Grid.Column="1" Text="5" 
+                                         Style="{StaticResource NumericThemedTextBox}"
+                                         Tag="5"
+                                         FontSize="24" 
+                                         Margin="8,0"
+                                         Width="80"
+                                         Foreground="{Binding ForegroundColor}"
+                                         Background="{Binding BackgroundColor}"
+                                         PreviewTextInput="NumericTextBox_PreviewTextInput"
+                                         PreviewKeyDown="NumericTextBox_PreviewKeyDown" />
+                                <Button Grid.Column="2" Width="48" Height="48"
+                                        Style="{StaticResource SoundFlatButton}"
+                                        Click="BtnIncreasePointsToWin_Click"
+                                        Foreground="{Binding ForegroundColor}"
+                                        ToolTip="増やす">
+                                    <pack:PackIcon Kind="ChevronRight" Width="28" Height="28" />
+                                </Button>
+                            </Grid>
+                        </StackPanel>
+
+                        <StackPanel Margin="0,0,0,16">
+                            <TextBlock Text="最大誤答数" FontSize="14" Foreground="{Binding SecondaryTextColor}" Margin="0,0,0,8" HorizontalAlignment="Center" />
+                            <Grid HorizontalAlignment="Center" Width="220">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="Auto" />
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="Auto" />
+                                </Grid.ColumnDefinitions>
+                                <Button Grid.Column="0" Width="48" Height="48"
+                                        Style="{StaticResource SoundFlatButton}"
+                                        Click="BtnDecreaseMaxMistakes_Click"
+                                        Foreground="{Binding ForegroundColor}"
+                                        ToolTip="減らす">
+                                    <pack:PackIcon Kind="ChevronLeft" Width="28" Height="28" />
+                                </Button>
+                                <TextBox x:Name="TxtMaxMistakes" Grid.Column="1" Text="3" 
+                                         Style="{StaticResource NumericThemedTextBox}"
+                                         Tag="3"
+                                         FontSize="24"
+                                         Margin="8,0"
+                                         Width="80"
+                                         Foreground="{Binding ForegroundColor}"
+                                         Background="{Binding BackgroundColor}"
+                                         PreviewTextInput="NumericTextBox_PreviewTextInput"
+                                         PreviewKeyDown="NumericTextBox_PreviewKeyDown" />
+                                <Button Grid.Column="2" Width="48" Height="48"
+                                        Style="{StaticResource SoundFlatButton}"
+                                        Click="BtnIncreaseMaxMistakes_Click"
+                                        Foreground="{Binding ForegroundColor}"
+                                        ToolTip="増やす">
+                                    <pack:PackIcon Kind="ChevronRight" Width="28" Height="28" />
+                                </Button>
+                            </Grid>
+                        </StackPanel>
+
+                        <StackPanel>
+                            <TextBlock Text="問題数" FontSize="14" Foreground="{Binding SecondaryTextColor}" Margin="0,0,0,8" HorizontalAlignment="Center" />
+                            <Grid HorizontalAlignment="Center" Width="220">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="Auto" />
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="Auto" />
+                                </Grid.ColumnDefinitions>
+                                <Button Grid.Column="0" Width="48" Height="48"
+                                        Style="{StaticResource SoundFlatButton}"
+                                        Click="BtnDecreaseNumQuestions_Click"
+                                        Foreground="{Binding ForegroundColor}"
+                                        ToolTip="減らす">
+                                    <pack:PackIcon Kind="ChevronLeft" Width="28" Height="28" />
+                                </Button>
+                                <TextBox x:Name="TxtNumQuestions" Grid.Column="1" Text="10" 
+                                         Style="{StaticResource NumericThemedTextBox}"
+                                         Tag="10"
+                                         FontSize="24"
+                                         Margin="8,0"
+                                         Width="80"
+                                         Foreground="{Binding ForegroundColor}"
+                                         Background="{Binding BackgroundColor}"
+                                         PreviewTextInput="NumericTextBox_PreviewTextInput"
+                                         PreviewKeyDown="NumericTextBox_PreviewKeyDown" />
+                                <Button Grid.Column="2" Width="48" Height="48"
+                                        Style="{StaticResource SoundFlatButton}"
+                                        Click="BtnIncreaseNumQuestions_Click"
+                                        Foreground="{Binding ForegroundColor}"
+                                        ToolTip="増やす">
+                                    <pack:PackIcon Kind="ChevronRight" Width="28" Height="28" />
+                                </Button>
+                            </Grid>
+                        </StackPanel>
+                </StackPanel>
+
+                <!-- Action buttons -->
+                <Button x:Name="BtnHostStartGame" Content="ゲーム開始" Click="BtnHostStartGame_Click" 
+                        Width="320" Height="72" FontSize="22"
+                        Style="{StaticResource TitleHoverButton}" 
+                        Foreground="{Binding ForegroundColor}" HorizontalAlignment="Center" />
+
+            </StackPanel>
+        </Grid>
+
+        <!-- Join Panel -->
+        <Grid x:Name="JoinPanel" Visibility="Collapsed" Margin="12" Background="Transparent">
+            <!-- Back button (top center - slides up to Title) -->
+            <Button x:Name="BtnJoinBack" Click="BtnJoinBack_Click" 
+                    HorizontalAlignment="Center" VerticalAlignment="Top" 
+                    Margin="0,24,0,0" Width="64" Height="64"
+                    Style="{StaticResource SoundToolButton}" 
+                    ToolTip="タイトルに戻る"
+                    Foreground="{Binding ForegroundColor}">
+                <pack:PackIcon Kind="ChevronUp" Width="36" Height="36" />
+            </Button>
+
+            <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,8,8,0">
+                <Button x:Name="BtnEditProfileJoin" Click="BtnEditProfile_Click" Visibility="Visible" Width="64" Height="64" Margin="0,0,8,0" Style="{StaticResource SettingsButton}" ToolTip="Settings" Foreground="{Binding ForegroundColor}">
+                    <pack:PackIcon Kind="Cog" Width="28" Height="28" />
+                </Button>
+                <Button x:Name="BtnExitGameJoin" Click="BtnExitGame_Click" Visibility="Visible" Width="64" Height="64" Style="{StaticResource CloseButton}" ToolTip="Close" Foreground="{Binding ForegroundColor}">
+                    <pack:PackIcon Kind="Close" Width="24" Height="24" />
+                </Button>
+            </StackPanel>
+
+            <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" Width="520">
+                <TextBlock Text="ルーム参加" FontSize="28" FontWeight="Bold" HorizontalAlignment="Center" Margin="0,0,0,32" Foreground="{Binding ForegroundColor}" />
+                
+                <StackPanel Margin="0,0,0,24">
+                    <TextBlock Text="プレイヤー名" FontSize="14" Foreground="{Binding SecondaryTextColor}" Margin="0,0,0,8" />
+                    <TextBox x:Name="TxtJoinPlayerName" Text="Player" 
+                             Style="{StaticResource ThemedTextBox}"
+                             Tag="例: Player1"
+                             FontSize="16"
+                             Foreground="{Binding ForegroundColor}"
+                             Background="{Binding BackgroundColor}" />
+                </StackPanel>
+                
+                <StackPanel Margin="0,0,0,32">
+                    <TextBlock Text="ロビーコード" FontSize="14" Foreground="{Binding SecondaryTextColor}" Margin="0,0,0,8" />
+                    <TextBox x:Name="TxtLobbyCodeInput" Text="" 
+                             Style="{StaticResource ThemedTextBox}"
+                             Tag="6桁の英数字"
+                             FontSize="16" 
+                             CharacterCasing="Upper"
+                             MaxLength="6"
+                             FontFamily="Consolas"
+                             HorizontalContentAlignment="Left"
+                             Foreground="{Binding ForegroundColor}"
+                             Background="{Binding BackgroundColor}" />
+                </StackPanel>
+                
+                <Button x:Name="BtnJoinConnect" Content="参加" Click="BtnJoinConnect_Click" 
+                        Width="240" Height="56" FontSize="18"
+                        Style="{StaticResource TitleHoverButton}"
+                        Foreground="{Binding ForegroundColor}" HorizontalAlignment="Center" />
+                
+                <TextBlock x:Name="TxtJoinStatus" Margin="0,12,0,0" Foreground="{Binding SecondaryTextColor}" 
+                           HorizontalAlignment="Center" TextAlignment="Center" />
+            </StackPanel>
+        </Grid>
+
+        <!-- Game Panel -->
+        <Grid x:Name="GamePanel" Visibility="Collapsed" d:Visibility="Visible" Margin="12" Background="Transparent">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="*" />
+                <RowDefinition Height="Auto" />
+            </Grid.RowDefinitions>
+
+            <!-- Answering badge shown while someone is answering -->
+            <TextBlock x:Name="TxtAnsweringBadge" Grid.Row="0" HorizontalAlignment="Center" VerticalAlignment="Top" Margin="0,8,0,0" Visibility="Collapsed" FontSize="20" FontWeight="Bold" Background="#FFFFE0" Foreground="#8B0000" Padding="8" />
+
+            <!-- Leave button (top-right during game) -->
+            <Button x:Name="BtnLeaveGameTop" Grid.Row="0" HorizontalAlignment="Right" VerticalAlignment="Top" 
+                    Margin="0,8,8,0" Width="48" Height="48"
+                    Style="{StaticResource SoundToolButton}" 
+                    ToolTip="退室" Click="BtnLeaveGame_Click"
+                    Foreground="{Binding ForegroundColor}">
+                <pack:PackIcon Kind="ExitToApp" Width="24" Height="24" />
+            </Button>
+
+            <!-- Players area (top, centered, ~80% width) -->
+            <StackPanel Grid.Row="0" HorizontalAlignment="Center" Margin="0,12,0,0">
+                <Border Background="{Binding ScoreboardBackgroundColor}" Padding="8" CornerRadius="6" Width="1200">
+                    <StackPanel>
+                        <TextBlock Text="スコアボード" FontWeight="Bold" HorizontalAlignment="Center" Margin="0,0,0,8" Foreground="{Binding ForegroundColor}" />
+                        <ItemsControl x:Name="ListPlayersInGame" HorizontalAlignment="Center">
+                            <ItemsControl.ItemsPanel>
+                                <ItemsPanelTemplate>
+                                    <WrapPanel Orientation="Horizontal" HorizontalAlignment="Center" />
+                                </ItemsPanelTemplate>
+                            </ItemsControl.ItemsPanel>
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <Border BorderBrush="{Binding DataContext.BorderColor, RelativeSource={RelativeSource AncestorType=Window}}" BorderThickness="1" CornerRadius="8" Padding="10" Margin="6" Background="{Binding DataContext.CardBackgroundColor, RelativeSource={RelativeSource AncestorType=Window}}" Width="160">
+                                        <Border.Style>
+                                            <Style TargetType="Border">
+                                                <Style.Triggers>
+                                                    <DataTrigger Binding="{Binding IsDisabled}" Value="True">
+                                                        <Setter Property="Opacity" Value="0.45" />
+                                                    </DataTrigger>
+                                                </Style.Triggers>
+                                            </Style>
+                                        </Border.Style>
+
+                                        <StackPanel HorizontalAlignment="Center">
+                                            <Ellipse Width="22" Height="22" Fill="{Binding ColorBrush}" Stroke="{Binding DataContext.BorderColor, RelativeSource={RelativeSource AncestorType=Window}}" StrokeThickness="1" />
+
+                                            <TextBlock Text="{Binding Name}" Foreground="{Binding DataContext.ForegroundColor, RelativeSource={RelativeSource AncestorType=Window}}" FontWeight="Bold" FontSize="16" Margin="0,8,0,4" TextAlignment="Center" TextTrimming="CharacterEllipsis" />
+
+                                            <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,6,0,0">
+                                                <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="0,0,12,0">
+                                                    <pack:PackIcon Kind="CircleOutline" Width="18" Height="18" Foreground="#2E7D32" VerticalAlignment="Center" />
+                                                    <TextBlock Text="{Binding Correct}" FontSize="18" FontWeight="Bold" Foreground="#2E7D32" VerticalAlignment="Center" Margin="6,0,0,0" />
+                                                </StackPanel>
+                                                <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                                    <pack:PackIcon Kind="Close" Width="18" Height="18" Foreground="#C62828" VerticalAlignment="Center" />
+                                                    <TextBlock Text="{Binding Wrong}" FontSize="18" FontWeight="Bold" Foreground="#C62828" VerticalAlignment="Center" Margin="6,0,0,0" />
+                                                </StackPanel>
+                                            </StackPanel>
+                                        </StackPanel>
+                                    </Border>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </StackPanel>
+                </Border>
+            </StackPanel>
+
+            <!-- Question area (middle) -->
+            <StackPanel Grid.Row="1" VerticalAlignment="Top" HorizontalAlignment="Center" Margin="12,12,12,0">
+                <TextBlock x:Name="TxtGameQuestion" Text="[質問がここに表示されます]" FontSize="24" TextWrapping="Wrap" Width="820" TextAlignment="Left" Margin="0,24,0,0" Foreground="{Binding ForegroundColor}"/>
+                <TextBlock x:Name="TxtAnswerReveal" Text="" FontSize="18" TextWrapping="Wrap" Width="820" TextAlignment="Center" Margin="0,12,0,0" Foreground="{Binding SecondaryTextColor}" Visibility="Collapsed" />
+                <ProgressBar x:Name="PbNextTimer" Width="520" Height="4" Margin="0,12,0,0" Visibility="Collapsed"
+                             Minimum="0" Maximum="1" Value="0"
+                             Background="{Binding ProgressBarBackgroundColor}" 
+                             Foreground="{Binding ProgressBarForegroundColor}" 
+                             BorderThickness="0" />
+                <TextBlock x:Name="TxtGameStatus" Margin="0,12,0,0" Foreground="{Binding SecondaryTextColor}" HorizontalAlignment="Center" Visibility="Collapsed" />
+            </StackPanel>
+
+            <!-- Buzz button (bottom center) -->
+            <StackPanel Grid.Row="2" HorizontalAlignment="Center" VerticalAlignment="Bottom" Margin="0,12,0,80">
+                <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
+                    <Button x:Name="BtnGameBuzz" Width="263" Height="249" FontSize="22" Click="BtnGameBuzz_Click" PreviewMouseLeftButtonDown="BtnGameBuzz_PreviewMouseLeftButtonDown" PreviewMouseLeftButtonUp="BtnGameBuzz_PreviewMouseLeftButtonUp" LostMouseCapture="BtnGameBuzz_LostMouseCapture" Background="Transparent" BorderBrush="Transparent" BorderThickness="0" RenderTransformOrigin="0.546,-2.438" Cursor="Hand">
+                        <Button.Style>
+                            <Style TargetType="Button">
+                                <Setter Property="Background" Value="Transparent" />
+                                <Setter Property="BorderBrush" Value="Transparent" />
+                                <Setter Property="BorderThickness" Value="0" />
+                                <Setter Property="Template">
+                                    <Setter.Value>
+                                        <ControlTemplate TargetType="Button">
+                                            <Border Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}">
+                                                <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" />
+                                            </Border>
+                                        </ControlTemplate>
+                                    </Setter.Value>
+                                </Setter>
+                            </Style>
+                        </Button.Style>
+                        <Grid>
+                            <Image x:Name="ImgBuzz" Source="/Kuiz;component/Resources/img/button-unpressed.png" Stretch="UniformToFill" Margin="-22,-46,-19,-11" RenderTransformOrigin="0.459,0.085" />
+                        </Grid>
+                    </Button>
+                </StackPanel>
+            </StackPanel>
+        </Grid>
+
+        <!-- Result Panel -->
+        <Grid x:Name="ResultPanel" Visibility="Collapsed" Background="Transparent">
+            <!-- Close/Back button -->
+            <Button x:Name="BtnResultBack" Click="BtnBackToTitle_Click" 
+                    HorizontalAlignment="Right" VerticalAlignment="Top" 
+                    Margin="0,8,8,0" Width="48" Height="48"
+                    Style="{StaticResource SoundToolButton}" 
+                    ToolTip="タイトルに戻る"
+                    Foreground="{Binding ForegroundColor}">
+                <pack:PackIcon Kind="Close" Width="24" Height="24" />
+            </Button>
+
+            <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center" Width="800">
+                <!-- Title -->
+                <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,0,0,24">
+                    <pack:PackIcon Kind="TrophyVariant" Width="36" Height="36" Foreground="#FFD700" VerticalAlignment="Center" Margin="0,0,12,0" />
+                    <TextBlock Text="ゲーム終了" FontSize="32" FontWeight="Bold" Foreground="{Binding ForegroundColor}" VerticalAlignment="Center" />
+                </StackPanel>
+
+                <!-- Winner Display -->
+                <materialDesign:Card Padding="20" Margin="0,0,0,32" UniformCornerRadius="12" Background="{Binding CardBackgroundColor}">
+                    <StackPanel>
+                        <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,0,0,12">
+                            <pack:PackIcon Kind="Trophy" Width="24" Height="24" Foreground="#FFD700" VerticalAlignment="Center" Margin="0,0,8,0" />
+                            <TextBlock Text="優勝" FontSize="24" FontWeight="Bold" Foreground="#FFD700" VerticalAlignment="Center" />
+                        </StackPanel>
+                        <TextBlock x:Name="TxtWinnerName" Text="Player 1" FontSize="28" FontWeight="Bold" HorizontalAlignment="Center" Foreground="{Binding ForegroundColor}" />
+                        <TextBlock x:Name="TxtWinnerScore" Text="7ポイント" FontSize="20" HorizontalAlignment="Center" Foreground="{Binding SecondaryTextColor}" Margin="0,8,0,0" />
+                    </StackPanel>
+                </materialDesign:Card>
+
+                <!-- Podium / Rankings -->
+                <Border BorderBrush="{Binding BorderColor}" BorderThickness="1" CornerRadius="12" Background="{Binding CardBackgroundColor}" Padding="20">
+                    <StackPanel>
+                        <TextBlock Text="最終結果" FontSize="20" FontWeight="SemiBold" HorizontalAlignment="Center" Margin="0,0,0,16" Foreground="{Binding ForegroundColor}" />
+                        
+                        <ListBox x:Name="ListResultPlayers" BorderThickness="0" Background="Transparent" MaxHeight="300">
+                            <ListBox.ItemContainerStyle>
+                                <Style TargetType="ListBoxItem" BasedOn="{StaticResource NoHoverListBoxItem}" />
+                            </ListBox.ItemContainerStyle>
+                            <ListBox.ItemTemplate>
+                                <DataTemplate>
+                                    <materialDesign:Card Padding="12" Margin="4" UniformCornerRadius="8" Background="{Binding DataContext.CardBackgroundColor, RelativeSource={RelativeSource AncestorType=Window}}">
+                                        <Grid>
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="60" />
+                                                <ColumnDefinition Width="32" />
+                                                <ColumnDefinition Width="*" />
+                                                <ColumnDefinition Width="Auto" />
+                                                <ColumnDefinition Width="Auto" />
+                                            </Grid.ColumnDefinitions>
+
+                                            <!-- Rank |
+                                            <StackPanel Grid.Column="0" Orientation="Horizontal" HorizontalAlignment="Center">
+                                                <TextBlock Text="{Binding Rank, StringFormat='{}{0}位'}" FontSize="18" FontWeight="Bold" VerticalAlignment="Center">
+                                                    <TextBlock.Style>
+                                                        <Style TargetType="TextBlock">
+                                                            <Setter Property="Foreground" Value="{Binding DataContext.SecondaryTextColor, RelativeSource={RelativeSource AncestorType=Window}}" />
+                                                            <Style.Triggers>
+                                                                <DataTrigger Binding="{Binding Rank}" Value="1">
+                                                                    <Setter Property="Foreground" Value="#FFD700" />
+                                                                </DataTrigger>
+                                                                <DataTrigger Binding="{Binding Rank}" Value="2">
+                                                                    <Setter Property="Foreground" Value="#C0C0C0" />
+                                                                </DataTrigger>
+                                                                <DataTrigger Binding="{Binding Rank}" Value="3">
+                                                                    <Setter Property="Foreground" Value="#CD7F32" />
+                                                                </DataTrigger>
+                                                            </Style.Triggers>
+                                                        </Style>
+                                                    </TextBlock>
+                                                </TextBlock>
+                                            </StackPanel>-->
+
+                                            <!-- Color Circle -->
+                                            <Ellipse Grid.Column="1" Width="22" Height="22" Fill="{Binding ColorBrush}" VerticalAlignment="Center" />
+
+                                            <!-- Player Name -->
+                                            <TextBlock Grid.Column="2" Text="{Binding Name}" FontSize="16" FontWeight="SemiBold" Foreground="{Binding DataContext.ForegroundColor, RelativeSource={RelativeSource AncestorType=Window}}" VerticalAlignment="Center" Margin="12,0,0,0" />
+
+                                            <!-- Score -->
+                                            <StackPanel Grid.Column="3" Orientation="Horizontal" VerticalAlignment="Center" Margin="16,0">
+                                                <pack:PackIcon Kind="CircleOutline" Width="18" Height="18" Foreground="#2E7D32" VerticalAlignment="Center" />
+                                                <TextBlock Text="{Binding Score}" FontSize="16" FontWeight="Bold" Foreground="#2E7D32" VerticalAlignment="Center" Margin="6,0,0,0" />
+                                            </StackPanel>
+
+                                            <!-- Mistakes -->
+                                            <StackPanel Grid.Column="4" Orientation="Horizontal" VerticalAlignment="Center">
+                                                <pack:PackIcon Kind="Close" Width="18" Height="18" Foreground="#C62828" VerticalAlignment="Center" />
+                                                <TextBlock Text="{Binding Mistakes}" FontSize="16" FontWeight="Bold" Foreground="#C62828" VerticalAlignment="Center" Margin="6,0,0,0" />
+                                            </StackPanel>
+                                        </Grid>
+                                    </materialDesign:Card>
+                                </DataTemplate>
+                            </ListBox.ItemTemplate>
+                        </ListBox>
+                    </StackPanel>
+                </Border>
+
+                <!-- Back to Lobby Button -->
+                <Button x:Name="BtnBackToLobby" Content="ロビーに戻る" Click="BtnBackToLobby_Click" 
+                        Margin="0,24,0,0" Width="220" Height="56" FontSize="18"
+                        Style="{StaticResource TitleHoverButton}" 
+                        Foreground="{Binding ForegroundColor}" HorizontalAlignment="Center" />
+            </StackPanel>
+        </Grid>
+
+        <!-- Question Manager Panel -->
+        <Grid x:Name="QuestionManagerPanel" Visibility="Collapsed" Background="Transparent">
+            <!-- Back button (top center - slides up to Title) -->
+            <Button x:Name="BtnQMBack" Click="BtnQMBack_Click" 
+                    HorizontalAlignment="Center" VerticalAlignment="Top" 
+                    Margin="0,24,0,0" Width="64" Height="64"
+                    Style="{StaticResource SoundToolButton}" 
+                    ToolTip="タイトルに戻る"
+                    Foreground="{Binding ForegroundColor}">
+                <pack:PackIcon Kind="ChevronUp" Width="36" Height="36" />
+            </Button>
+
+            <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,8,8,0">
+                <Button x:Name="BtnEditProfileQM" Click="BtnEditProfile_Click" Width="64" Height="64" Margin="0,0,8,0" Style="{StaticResource SettingsButton}" ToolTip="Settings" Foreground="{Binding ForegroundColor}">
+                    <pack:PackIcon Kind="Cog" Width="28" Height="28" />
+                </Button>
+                <Button x:Name="BtnExitGameQM" Click="BtnExitGame_Click" Width="64" Height="64" Style="{StaticResource CloseButton}" ToolTip="Close" Foreground="{Binding ForegroundColor}">
+                    <pack:PackIcon Kind="Close" Width="24" Height="24" />
+                </Button>
+            </StackPanel>
+
+            <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" Width="600">
+                <TextBlock Text="問題マネージャー" FontSize="32" FontWeight="Bold" HorizontalAlignment="Center" Margin="0,0,0,48" Foreground="{Binding ForegroundColor}" />
+                
+                <StackPanel Orientation="Vertical" HorizontalAlignment="Center">
+                    <Button x:Name="BtnGoToCreateQuestion" Content="作問" Width="400" Height="80" FontSize="20" Margin="0,0,0,24" Click="BtnGoToCreateQuestion_Click" Style="{StaticResource TitleHoverButton}" Foreground="{Binding ForegroundColor}">
+                        <Button.ContentTemplate>
+                            <DataTemplate>
+                                <StackPanel Orientation="Horizontal">
+                                    <pack:PackIcon Kind="PencilPlus" Width="28" Height="28" VerticalAlignment="Center" Margin="0,0,16,0" />
+                                    <TextBlock Text="作問" FontSize="20" VerticalAlignment="Center" />
+                                </StackPanel>
+                            </DataTemplate>
+                        </Button.ContentTemplate>
+                    </Button>
+                    
+                    <Button x:Name="BtnGoToQuestionHistory" Content="出題履歴" Width="400" Height="80" FontSize="20" Margin="0,0,0,24" Click="BtnGoToQuestionHistory_Click" Style="{StaticResource TitleHoverButton}" Foreground="{Binding ForegroundColor}">
+                        <Button.ContentTemplate>
+                            <DataTemplate>
+                                <StackPanel Orientation="Horizontal">
+                                    <pack:PackIcon Kind="History" Width="28" Height="28" VerticalAlignment="Center" Margin="0,0,16,0" />
+                                    <TextBlock Text="出題履歴" FontSize="20" VerticalAlignment="Center" />
+                                </StackPanel>
+                            </DataTemplate>
+                        </Button.ContentTemplate>
+                    </Button>
+                </StackPanel>
+            </StackPanel>
+        </Grid>
+
+        <!-- Create Question Panel -->
+        <Grid x:Name="CreateQuestionPanel" Visibility="Collapsed" Background="Transparent">
+            <!-- Back button (top center - slides up to QuestionManager) -->
+            <Button x:Name="BtnCQBack" Click="BtnCQBack_Click" 
+                    HorizontalAlignment="Center" VerticalAlignment="Top" 
+                    Margin="0,24,0,0" Width="64" Height="64"
+                    Style="{StaticResource SoundToolButton}" 
+                    ToolTip="問題マネージャーに戻る"
+                    Foreground="{Binding ForegroundColor}">
+                <pack:PackIcon Kind="ChevronUp" Width="36" Height="36" />
+            </Button>
+
+            <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,8,8,0">
+                <Button x:Name="BtnEditProfileCQ" Click="BtnEditProfile_Click" Width="64" Height="64" Margin="0,0,8,0" Style="{StaticResource SettingsButton}" ToolTip="Settings" Foreground="{Binding ForegroundColor}">
+                    <pack:PackIcon Kind="Cog" Width="28" Height="28" />
+                </Button>
+                <Button x:Name="BtnExitGameCQ" Click="BtnExitGame_Click" Width="64" Height="64" Style="{StaticResource CloseButton}" ToolTip="Close" Foreground="{Binding ForegroundColor}">
+                    <pack:PackIcon Kind="Close" Width="24" Height="24" />
+                </Button>
+            </StackPanel>
+
+            <Grid HorizontalAlignment="Center" VerticalAlignment="Center" Width="1200">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="500" />
+                    <ColumnDefinition Width="*" />
+                </Grid.ColumnDefinitions>
+
+                <!-- Input Section -->
+                <StackPanel Grid.Column="0" Margin="0,0,32,0">
+                    <TextBlock Text="作問" FontSize="28" FontWeight="Bold" HorizontalAlignment="Center" Margin="0,0,0,32" Foreground="{Binding ForegroundColor}" />
+                    
+                    <StackPanel Margin="0,0,0,16">
+                        <TextBlock Text="問題文" FontSize="14" Foreground="{Binding SecondaryTextColor}" Margin="0,0,0,8" />
+                        <TextBox x:Name="TxtNewQuestionText" 
+                                 Style="{StaticResource MaterialDesignOutlinedTextBox}"
+                                 TextWrapping="Wrap"
+                                 AcceptsReturn="True"
+                                 Height="150"
+                                 FontSize="16"
+                                 Foreground="{Binding ForegroundColor}"
+                                 Background="{Binding BackgroundColor}" />
+                    </StackPanel>
+                    
+                    <StackPanel Margin="0,0,0,24">
+                        <TextBlock Text="答え" FontSize="14" Foreground="{Binding SecondaryTextColor}" Margin="0,0,0,8" />
+                        <TextBox x:Name="TxtNewQuestionAnswer" 
+                                 Style="{StaticResource MaterialDesignOutlinedTextBox}"
+                                 FontSize="16"
+                                 Foreground="{Binding ForegroundColor}"
+                                 Background="{Binding BackgroundColor}" />
+                    </StackPanel>
+                    
+                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
+                        <Button x:Name="BtnAddToList" Content="リストに追加" Width="180" Height="48" FontSize="16" Margin="0,0,16,0" Click="BtnAddToList_Click" Style="{StaticResource TitleHoverButton}" Foreground="{Binding ForegroundColor}" />
+                        <Button x:Name="BtnClearInputs" Content="クリア" Width="100" Height="48" FontSize="16" Click="BtnClearInputs_Click" Style="{StaticResource TitleHoverButton}" Foreground="{Binding ForegroundColor}" />
+                    </StackPanel>
+                </StackPanel>
+
+                <!-- List Section -->
+                <StackPanel Grid.Column="1">
+                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,0,0,16">
+                        <pack:PackIcon Kind="FormatListBulleted" Width="24" Height="24" VerticalAlignment="Center" Foreground="{Binding SecondaryTextColor}" Margin="0,0,8,0" />
+                        <TextBlock Text="作成した問題リスト" FontSize="18" FontWeight="SemiBold" VerticalAlignment="Center" Foreground="{Binding ForegroundColor}" />
+                        <TextBlock x:Name="TxtQuestionListCount" Text="(0件)" FontSize="16" Foreground="{Binding SecondaryTextColor}" VerticalAlignment="Center" Margin="8,0,0,0" />
+                    </StackPanel>
+                    
+                    <Border BorderBrush="{Binding BorderColor}" BorderThickness="1" CornerRadius="8" Background="{Binding CardBackgroundColor}" Height="400">
+                        <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+                            <ItemsControl x:Name="ListCreatedQuestions">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate>
+                                        <Border BorderBrush="{Binding DataContext.BorderColor, RelativeSource={RelativeSource AncestorType=Window}}" BorderThickness="0,0,0,1" Padding="12,8" Margin="0">
+                                            <Grid>
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="*" />
+                                                    <ColumnDefinition Width="Auto" />
+                                                    <ColumnDefinition Width="Auto" />
+                                                </Grid.ColumnDefinitions>
+                                                <StackPanel Grid.Column="0" Margin="0,0,8,0">
+                                                    <TextBlock Text="{Binding Text}" FontSize="14" TextWrapping="Wrap" Foreground="{Binding DataContext.ForegroundColor, RelativeSource={RelativeSource AncestorType=Window}}" />
+                                                    <TextBlock Text="{Binding Answer, StringFormat='答え: {0}'}" FontSize="12" Foreground="{Binding DataContext.SecondaryTextColor, RelativeSource={RelativeSource AncestorType=Window}}" Margin="0,4,0,0" />
+                                                </StackPanel>
+                                                <Button Grid.Column="1" Width="40" Height="40" Margin="0,0,4,0" Click="BtnEditFromList_Click" Tag="{Binding}" Foreground="{Binding DataContext.AccentColor, RelativeSource={RelativeSource AncestorType=Window}}" ToolTip="編集">
+                                                    <Button.RenderTransform>
+                                                        <ScaleTransform ScaleX="1" ScaleY="1" />
+                                                    </Button.RenderTransform>
+                                                    <Button.Style>
+                                                        <Style TargetType="Button" BasedOn="{StaticResource SoundToolButton}">
+                                                            <Setter Property="RenderTransformOrigin" Value="0.5,0.5" />
+                                                            <Style.Triggers>
+                                                                <Trigger Property="IsMouseOver" Value="True">
+                                                                    <Trigger.EnterActions>
+                                                                        <BeginStoryboard>
+                                                                            <Storyboard>
+                                                                                <DoubleAnimation Storyboard.TargetProperty="(UIElement.RenderTransform).(ScaleTransform.ScaleX)"
+                                                                                               To="1.15" Duration="0:0:0.15">
+                                                                                    <DoubleAnimation.EasingFunction>
+                                                                                        <CubicEase EasingMode="EaseOut" />
+                                                                                    </DoubleAnimation.EasingFunction>
+                                                                                </DoubleAnimation>
+                                                                                <DoubleAnimation Storyboard.TargetProperty="(UIElement.RenderTransform).(ScaleTransform.ScaleY)"
+                                                                                               To="1.15" Duration="0:0:0.15">
+                                                                                    <DoubleAnimation.EasingFunction>
+                                                                                        <CubicEase EasingMode="EaseOut" />
+                                                                                    </DoubleAnimation.EasingFunction>
+                                                                                </DoubleAnimation>
+                                                                            </Storyboard>
+                                                                        </BeginStoryboard>
+                                                                    </Trigger.EnterActions>
+                                                                    <Trigger.ExitActions>
+                                                                        <BeginStoryboard>
+                                                                            <Storyboard>
+                                                                                <DoubleAnimation Storyboard.TargetProperty="(UIElement.RenderTransform).(ScaleTransform.ScaleX)"
+                                                                                               To="1.0" Duration="0:0:0.15">
+                                                                                    <DoubleAnimation.EasingFunction>
+                                                                                        <CubicEase EasingMode="EaseOut" />
+                                                                                    </DoubleAnimation.EasingFunction>
+                                                                                </DoubleAnimation>
+                                                                                <DoubleAnimation Storyboard.TargetProperty="(UIElement.RenderTransform).(ScaleTransform.ScaleY)"
+                                                                                               To="1.0" Duration="0:0:0.15">
+                                                                                    <DoubleAnimation.EasingFunction>
+                                                                                        <CubicEase EasingMode="EaseOut" />
+                                                                                    </DoubleAnimation.EasingFunction>
+                                                                                </DoubleAnimation>
+                                                                            </Storyboard>
+                                                                        </BeginStoryboard>
+                                                                    </Trigger.ExitActions>
+                                                                </Trigger>
+                                                            </Style.Triggers>
+                                                        </Style>
+                                                    </Button.Style>
+                                                    <pack:PackIcon Kind="Pencil" Width="20" Height="20" />
+                                                </Button>
+                                                <Button Grid.Column="2" Width="40" Height="40" Click="BtnRemoveFromList_Click" Tag="{Binding}" Foreground="{Binding DataContext.SecondaryTextColor, RelativeSource={RelativeSource AncestorType=Window}}" ToolTip="削除">
+                                                    <Button.RenderTransform>
+                                                        <ScaleTransform ScaleX="1" ScaleY="1" />
+                                                    </Button.RenderTransform>
+                                                    <Button.Style>
+                                                        <Style TargetType="Button" BasedOn="{StaticResource SoundToolButton}">
+                                                            <Setter Property="RenderTransformOrigin" Value="0.5,0.5" />
+                                                            <Style.Triggers>
+                                                                <Trigger Property="IsMouseOver" Value="True">
+                                                                    <Trigger.EnterActions>
+                                                                        <BeginStoryboard>
+                                                                            <Storyboard>
+                                                                                <DoubleAnimation Storyboard.TargetProperty="(UIElement.RenderTransform).(ScaleTransform.ScaleX)"
+                                                                                               To="1.15" Duration="0:0:0.15">
+                                                                                    <DoubleAnimation.EasingFunction>
+                                                                                        <CubicEase EasingMode="EaseOut" />
+                                                                                    </DoubleAnimation.EasingFunction>
+                                                                                </DoubleAnimation>
+                                                                                <DoubleAnimation Storyboard.TargetProperty="(UIElement.RenderTransform).(ScaleTransform.ScaleY)"
+                                                                                               To="1.15" Duration="0:0:0.15">
+                                                                                    <DoubleAnimation.EasingFunction>
+                                                                                        <CubicEase EasingMode="EaseOut" />
+                                                                                    </DoubleAnimation.EasingFunction>
+                                                                                </DoubleAnimation>
+                                                                            </Storyboard>
+                                                                        </BeginStoryboard>
+                                                                    </Trigger.EnterActions>
+                                                                    <Trigger.ExitActions>
+                                                                        <BeginStoryboard>
+                                                                            <Storyboard>
+                                                                                <DoubleAnimation Storyboard.TargetProperty="(UIElement.RenderTransform).(ScaleTransform.ScaleX)"
+                                                                                               To="1.0" Duration="0:0:0.15">
+                                                                                    <DoubleAnimation.EasingFunction>
+                                                                                        <CubicEase EasingMode="EaseOut" />
+                                                                                    </DoubleAnimation.EasingFunction>
+                                                                                </DoubleAnimation>
+                                                                                <DoubleAnimation Storyboard.TargetProperty="(UIElement.RenderTransform).(ScaleTransform.ScaleY)"
+                                                                                               To="1.0" Duration="0:0:0.15">
+                                                                                    <DoubleAnimation.EasingFunction>
+                                                                                        <CubicEase EasingMode="EaseOut" />
+                                                                                    </DoubleAnimation.EasingFunction>
+                                                                                </DoubleAnimation>
+                                                                            </Storyboard>
+                                                                        </BeginStoryboard>
+                                                                    </Trigger.ExitActions>
+                                                                </Trigger>
+                                                            </Style.Triggers>
+                                                        </Style>
+                                                    </Button.Style>
+                                                    <pack:PackIcon Kind="Close" Width="20" Height="20" />
+                                                </Button>
+                                            </Grid>
+                                        </Border>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                        </ScrollViewer>
+                    </Border>
+                    
+                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,24,0,0">
+                        <Button x:Name="BtnExportJson" Content="JSONファイルに出力" Width="200" Height="48" FontSize="16" Margin="0,0,16,0" Click="BtnExportJson_Click" Style="{StaticResource TitleHoverButton}" Foreground="{Binding ForegroundColor}" />
+                        <Button x:Name="BtnImportToDb" Content="DBにインポート" Width="180" Height="48" FontSize="16" Click="BtnImportToDb_Click" Style="{StaticResource TitleHoverButton}" Foreground="{Binding ForegroundColor}" />
+                    </StackPanel>
+                </StackPanel>
+            </Grid>
+        </Grid>
+
+        <!-- Question History Panel -->
+        <Grid x:Name="QuestionHistoryPanel" Visibility="Collapsed" Background="Transparent">
+            <!-- Back button (top center - slides up to QuestionManager) -->
+            <Button x:Name="BtnQHBack" Click="BtnQHBack_Click" 
+                    HorizontalAlignment="Center" VerticalAlignment="Top" 
+                    Margin="0,24,0,0" Width="64" Height="64"
+                    Style="{StaticResource SoundToolButton}" 
+                    ToolTip="問題マネージャーに戻る"
+                    Foreground="{Binding ForegroundColor}">
+                <pack:PackIcon Kind="ChevronUp" Width="36" Height="36" />
+            </Button>
+
+            <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,8,8,0">
+                <Button x:Name="BtnEditProfileQH" Click="BtnEditProfile_Click" Width="64" Height="64" Margin="0,0,8,0" Style="{StaticResource SettingsButton}" ToolTip="Settings" Foreground="{Binding ForegroundColor}">
+                    <pack:PackIcon Kind="Cog" Width="28" Height="28" />
+                </Button>
+                <Button x:Name="BtnExitGameQH" Click="BtnExitGame_Click" Width="64" Height="64" Style="{StaticResource CloseButton}" ToolTip="Close" Foreground="{Binding ForegroundColor}">
+                    <pack:PackIcon Kind="Close" Width="24" Height="24" />
+                </Button>
+            </StackPanel>
+
+            <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" Width="1000">
+                <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,0,0,24">
+                    <pack:PackIcon Kind="History" Width="32" Height="32" VerticalAlignment="Center" Foreground="{Binding ForegroundColor}" Margin="0,0,12,0" />
+                    <TextBlock Text="出題履歴" FontSize="28" FontWeight="Bold" VerticalAlignment="Center" Foreground="{Binding ForegroundColor}" />
+                    <TextBlock x:Name="TxtHistoryCount" Text="(0件)" FontSize="18" Foreground="{Binding SecondaryTextColor}" VerticalAlignment="Center" Margin="12,0,0,0" />
+                </StackPanel>
+                
+                <Border BorderBrush="{Binding BorderColor}" BorderThickness="1" CornerRadius="8" Background="{Binding CardBackgroundColor}" Height="600">
+                    <Grid>
+                        <!-- Header -->
+                        <Border Background="{Binding CardBackgroundColor}" BorderBrush="{Binding BorderColor}" BorderThickness="0,0,0,1" VerticalAlignment="Top" Padding="16,12">
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="180" />
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="200" />
+                                    <ColumnDefinition Width="120" />
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Grid.Column="0" Text="出題日時" FontWeight="Bold" FontSize="14" Foreground="{Binding ForegroundColor}" />
+                                <TextBlock Grid.Column="1" Text="問題文" FontWeight="Bold" FontSize="14" Foreground="{Binding ForegroundColor}" />
+                                <TextBlock Grid.Column="2" Text="答え" FontWeight="Bold" FontSize="14" Foreground="{Binding ForegroundColor}" />
+                                <TextBlock Grid.Column="3" Text="作問者" FontWeight="Bold" FontSize="14" Foreground="{Binding ForegroundColor}" />
+                            </Grid>
+                        </Border>
+                        
+                        <!-- List -->
+                        <ListBox x:Name="ListQuestionHistory" Margin="0,48,0,0" BorderThickness="0" Background="Transparent" ScrollViewer.HorizontalScrollBarVisibility="Disabled">
+                            <ListBox.ItemContainerStyle>
+                                <Style TargetType="ListBoxItem" BasedOn="{StaticResource NoHoverListBoxItem}" />
+                            </ListBox.ItemContainerStyle>
+                            <ListBox.ItemTemplate>
+                                <DataTemplate>
+                                    <Border BorderBrush="{Binding DataContext.BorderColor, RelativeSource={RelativeSource AncestorType=Window}}" BorderThickness="0,0,0,1" Padding="16,12">
+                                        <Grid>
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="180" />
+                                                <ColumnDefinition Width="*" />
+                                                <ColumnDefinition Width="200" />
+                                                <ColumnDefinition Width="120" />
+                                            </Grid.ColumnDefinitions>
+                                            <TextBlock Grid.Column="0" Text="{Binding PlayedAt, StringFormat='{}{0:yyyy/MM/dd HH:mm}'}" FontSize="13" Foreground="{Binding DataContext.SecondaryTextColor, RelativeSource={RelativeSource AncestorType=Window}}" VerticalAlignment="Center" />
+                                            <TextBlock Grid.Column="1" Text="{Binding Text}" FontSize="14" TextWrapping="NoWrap" TextTrimming="CharacterEllipsis" Foreground="{Binding DataContext.ForegroundColor, RelativeSource={RelativeSource AncestorType=Window}}" VerticalAlignment="Center" Margin="0,0,16,0" />
+                                            <TextBlock Grid.Column="2" Text="{Binding Answer}" FontSize="14" TextTrimming="CharacterEllipsis" Foreground="{Binding DataContext.ForegroundColor, RelativeSource={RelativeSource AncestorType=Window}}" VerticalAlignment="Center" />
+                                            <TextBlock Grid.Column="3" Text="{Binding Author}" FontSize="13" Foreground="{Binding DataContext.SecondaryTextColor, RelativeSource={RelativeSource AncestorType=Window}}" VerticalAlignment="Center" />
+                                        </Grid>
+                                    </Border>
+                                </DataTemplate>
+                            </ListBox.ItemTemplate>
+                        </ListBox>
+                        
+                        <!-- Empty state -->
+                        <StackPanel x:Name="HistoryEmptyState" VerticalAlignment="Center" HorizontalAlignment="Center" Visibility="Collapsed">
+                            <pack:PackIcon Kind="History" Width="64" Height="64" Foreground="{Binding SecondaryTextColor}" HorizontalAlignment="Center" />
+                            <TextBlock Text="出題履歴がありません" FontSize="18" Foreground="{Binding SecondaryTextColor}" HorizontalAlignment="Center" Margin="0,16,0,0" />
+                        </StackPanel>
+                    </Grid>
+                </Border>
+                
+                <Button x:Name="BtnClearHistory" Content="履歴をクリア" Width="160" Height="48" FontSize="16" Margin="0,24,0,0" Click="BtnClearHistory_Click" Style="{StaticResource TitleHoverButton}" Foreground="{Binding ForegroundColor}" HorizontalAlignment="Center" />
+            </StackPanel>
+        </Grid>
+
+        <!-- Overlay for result (modal within window) -->
+        <Grid x:Name="ResultOverlay" Visibility="Collapsed" Background="{Binding OverlayBackgroundColor}" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" IsHitTestVisible="False" Panel.ZIndex="50">
+            <Border x:Name="ResultOverlayBorder" Width="520" Padding="16" CornerRadius="8" Background="{Binding DialogBackgroundColor}" HorizontalAlignment="Center" VerticalAlignment="Center" RenderTransformOrigin="0.5,0.5">
+                <Border.RenderTransform>
+                    <ScaleTransform ScaleX="1" ScaleY="1" CenterX="0" CenterY="0" />
+                </Border.RenderTransform>
+                <Grid Height="160" VerticalAlignment="Center" HorizontalAlignment="Stretch">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="*" />
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="*" />
+                    </Grid.RowDefinitions>
+
+                    <TextBlock x:Name="TxtOverlayStatus" Grid.Row="1" FontSize="36" FontWeight="Bold" TextAlignment="Center" Foreground="{Binding ForegroundColor}" VerticalAlignment="Center" HorizontalAlignment="Center" />
+                    <TextBlock x:Name="TxtOverlayDetail" Grid.Row="2" Margin="0,8,0,0" FontSize="20" TextAlignment="Center" Foreground="{Binding SecondaryTextColor}" VerticalAlignment="Top" HorizontalAlignment="Center" />
+                </Grid>
+            </Border>
+        </Grid>
+
+        <!-- Answer overlay (modal-style input) -->
+        <Grid x:Name="AnswerOverlay" Visibility="Collapsed" Background="{Binding OverlayBackgroundColor}" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" IsHitTestVisible="False" Panel.ZIndex="50">
+            <Border x:Name="AnswerOverlayBorder" Width="520" Padding="12" CornerRadius="8" Background="{Binding DialogBackgroundColor}" HorizontalAlignment="Center" VerticalAlignment="Center" RenderTransformOrigin="0.5,0.5">
+                <Border.RenderTransform>
+                    <ScaleTransform ScaleX="1" ScaleY="1" CenterX="0" CenterY="0" />
+                </Border.RenderTransform>
+                <StackPanel>
+                    <TextBlock x:Name="TxtOverlayTitle" Text="回答" FontSize="20" FontWeight="Bold" TextAlignment="Center" Foreground="{Binding ForegroundColor}" />
+                    <TextBlock x:Name="TxtOverlayInfo" Margin="0,8,0,0" FontSize="18" TextAlignment="Center" Visibility="Collapsed" Foreground="{Binding ForegroundColor}" />
+                    <TextBox x:Name="TxtOverlayAnswer" Margin="0,8,0,0" FontSize="18" KeyDown="TxtOverlayAnswer_KeyDown" Foreground="{Binding ForegroundColor}" Background="{Binding BackgroundColor}" />
+                    <TextBlock x:Name="TxtOverlayTimer" Margin="0,8,0,0" FontSize="14" Foreground="{Binding SecondaryTextColor}" TextAlignment="Center" />
+                </StackPanel>
+            </Border>
+        </Grid>
+
+        <!-- Profile edit overlay -->
+        <Grid x:Name="ProfileOverlay" Visibility="Collapsed" Background="{Binding OverlayBackgroundColor}" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" IsHitTestVisible="True" Panel.ZIndex="60">
+            <Border x:Name="ProfileDialogBorder" Width="480" Padding="16" CornerRadius="8" Background="{Binding DialogBackgroundColor}" HorizontalAlignment="Center" VerticalAlignment="Center" RenderTransformOrigin="0.5,0.5">
+                <Border.RenderTransform>
+                    <ScaleTransform x:Name="ProfileDialogScale" ScaleX="1" ScaleY="1" CenterX="0" CenterY="0" />
+                </Border.RenderTransform>
+                <StackPanel>
+                    <TextBlock Text="設定" FontSize="20" FontWeight="Bold" TextAlignment="Center" Margin="0,0,0,16" Foreground="{Binding ForegroundColor}" />
+                    
+                    <!-- Player Name Section -->
+                    <StackPanel Margin="0,0,0,20">
+                        <TextBlock Text="プレイヤー名" FontSize="14" Foreground="{Binding SecondaryTextColor}" Margin="0,0,0,8" />
+                        <TextBox x:Name="TxtProfileName" FontSize="16" 
+                                 Style="{StaticResource MaterialDesignOutlinedTextBox}"
+                                 Foreground="{Binding ForegroundColor}"
+                                 Background="{Binding BackgroundColor}" />
+                    </StackPanel>
+                    
+                    <!-- Dark Mode Section -->
+                    <StackPanel Margin="0,0,0,20">
+                        <StackPanel Orientation="Horizontal" Margin="0,0,0,12">
+                            <pack:PackIcon Kind="ThemeLightDark" Width="20" Height="20" 
+                                          Foreground="{Binding SecondaryTextColor}" VerticalAlignment="Center" Margin="0,0,8,0" />
+                            <TextBlock Text="テーマ" FontSize="14" Foreground="{Binding SecondaryTextColor}" VerticalAlignment="Center" />
+                        </StackPanel>
+                        <Button x:Name="BtnToggleDarkMode" 
+                                Click="BtnToggleDarkMode_Click"
+                                Style="{StaticResource SoundFlatButton}"
+                                HorizontalAlignment="Left"
+                                Padding="8"
+                                Height="48">
+                            <StackPanel Orientation="Horizontal">
+                                <pack:PackIcon x:Name="IconDarkMode" 
+                                              Kind="WeatherNight" 
+                                              Width="24" 
+                                              Height="24" 
+                                              VerticalAlignment="Center"
+                                              Foreground="{Binding ForegroundColor}" />
+                                <TextBlock x:Name="TxtDarkModeStatus" 
+                                          Text="ライトモード" 
+                                          FontSize="14" 
+                                          VerticalAlignment="Center" 
+                                          Margin="12,0,0,0"
+                                          Foreground="{Binding ForegroundColor}" />
+                            </StackPanel>
+                        </Button>
+                    </StackPanel>
+                    
+                    <!-- Volume Control Section -->
+                    <StackPanel Margin="0,0,0,20">
+                        <StackPanel Orientation="Horizontal" Margin="0,0,0,12" VerticalAlignment="Center">
+                            <pack:PackIcon Kind="VolumeHigh" Width="20" Height="20" 
+                                          Foreground="{Binding SecondaryTextColor}" VerticalAlignment="Center" Margin="0,0,8,0" />
+                            <TextBlock Text="音量" FontSize="14" Foreground="{Binding SecondaryTextColor}" VerticalAlignment="Center" />
+                        </StackPanel>
+                        <Grid VerticalAlignment="Center" Height="48">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto" />
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="Auto" />
+                            </Grid.ColumnDefinitions>
+                            <Button x:Name="BtnToggleMute" Click="BtnToggleMute_Click" 
+                                    Style="{StaticResource SoundFlatButton}"
+                                    Width="52" Height="52" Grid.Column="0" ToolTip="ミュート/解除"
+                                    VerticalAlignment="Center" HorizontalContentAlignment="Center" VerticalContentAlignment="Center" Padding="0">
+                                <pack:PackIcon x:Name="IconVolumeToggle" Kind="VolumeHigh" Width="28" Height="28" 
+                                              Foreground="{Binding ForegroundColor}" VerticalAlignment="Center" />
+                            </Button>
+                            <Slider x:Name="SldVolume" Minimum="0" Maximum="1" TickFrequency="0.1" SmallChange="0.05" LargeChange="0.1"
+                                    ValueChanged="SldVolume_ValueChanged" Loaded="SldVolume_Loaded"
+                                    Style="{StaticResource MaterialDesignSlider}" 
+                                    Foreground="{Binding AccentColor}" Grid.Column="1" Margin="12,0"
+                                    VerticalAlignment="Center" />
+                            <TextBlock x:Name="TxtVolumeValue" Grid.Column="2" Text="{Binding ElementName=SldVolume, Path=Value, StringFormat={}{0:P0}}" 
+                                       FontSize="12" Foreground="{Binding SecondaryTextColor}" VerticalAlignment="Center" Margin="12,0,0,0" />
+                        </Grid>
+                    </StackPanel>
+                    
+                    <!-- Buttons -->
+                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,8,0,0">
+                        <Button Content="保存" Width="140" Height="50" Click="BtnSaveProfile_Click" 
+                                Style="{StaticResource SoundRaisedButton}"
+                                FontSize="16"
+                                Foreground="{Binding ForegroundColor}"
+                                Background="{Binding CardBackgroundColor}" />
+                        <Button Content="キャンセル" Width="140" Height="50" Click="BtnCancelProfile_Click" 
+                                Margin="16,0,0,0"
+                                Style="{StaticResource SoundRaisedButton}"
+                                FontSize="16"
+                                Foreground="{Binding ForegroundColor}"
+                                Background="{Binding CardBackgroundColor}" />
+                    </StackPanel>
+                </StackPanel>
+            </Border>
+        </Grid>
+
+        <!-- Start game confirmation overlay -->
+        <Grid x:Name="StartGameConfirm" Visibility="Collapsed" Background="{Binding OverlayBackgroundColor}" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" IsHitTestVisible="True" Panel.ZIndex="60">
+            <Border x:Name="StartGameConfirmBorder" Width="520" Padding="24" CornerRadius="8" Background="{Binding DialogBackgroundColor}" HorizontalAlignment="Center" VerticalAlignment="Center" RenderTransformOrigin="0.5,0.5">
+                <Border.RenderTransform>
+                    <ScaleTransform ScaleX="1" ScaleY="1" CenterX="0" CenterY="0" />
+                </Border.RenderTransform>
+                <StackPanel>
+                    <TextBlock Text="ゲームを開始しますか？" FontSize="24" FontWeight="Bold" TextAlignment="Center" Foreground="{Binding ForegroundColor}" Margin="0,0,0,8" />
+                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,24,0,0">
+                        <Button x:Name="BtnConfirmStartYes" Content="開始" Width="140" Height="50" Click="BtnConfirmStartYes_Click" 
+                                Style="{StaticResource SoundRaisedButton}"
+                                FontSize="16"
+                                Foreground="{Binding ConfirmButtonForegroundColor}"
+                                Background="{Binding ConfirmButtonBackgroundColor}" />
+                        <Button x:Name="BtnConfirmStartNo" Content="キャンセル" Width="140" Height="50" Click="BtnConfirmStartNo_Click" Margin="16,0,0,0" 
+                                Style="{StaticResource SoundRaisedButton}"
+                                FontSize="16"
+                                Foreground="{Binding ForegroundColor}"
+                                Background="{Binding CardBackgroundColor}" />
+                    </StackPanel>
+                </StackPanel>
+            </Border>
+        </Grid>
+
+        <!-- Countdown overlay shown before game starts -->
+        <Grid x:Name="StartGameCountdown" Visibility="Collapsed" Background="{Binding OverlayBackgroundColor}" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" IsHitTestVisible="True" Panel.ZIndex="60">
+            <Border Width="520" Padding="16" CornerRadius="8" Background="Transparent" HorizontalAlignment="Center" VerticalAlignment="Center">
+                <TextBlock x:Name="TxtStartCountdown" Text="3" FontSize="120" FontWeight="Bold" Foreground="White" HorizontalAlignment="Center" VerticalAlignment="Center" TextAlignment="Center" />
+            </Border>
+        </Grid>
+
+        <!-- Leave confirmation overlay -->
+        <Grid x:Name="LeaveConfirmOverlay" Visibility="Collapsed" Background="{Binding OverlayBackgroundColor}" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" IsHitTestVisible="True" Panel.ZIndex="70">
+            <Border x:Name="LeaveConfirmBorder" Width="520" Padding="24" CornerRadius="8" Background="{Binding DialogBackgroundColor}" HorizontalAlignment="Center" VerticalAlignment="Center" RenderTransformOrigin="0.5,0.5">
+                <Border.RenderTransform>
+                    <ScaleTransform ScaleX="1" ScaleY="1" CenterX="0" CenterY="0" />
+                </Border.RenderTransform>
+                <StackPanel>
+                    <TextBlock Text="退室してタイトルに戻りますか？" FontSize="22" FontWeight="Bold" TextAlignment="Center" Foreground="{Binding ForegroundColor}" Margin="0,0,0,8" />
+                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,24,0,0">
+                        <Button x:Name="BtnLeaveConfirmYes" Content="はい" Width="140" Height="50" Click="BtnLeaveConfirmYes_Click" 
+                                Style="{StaticResource SoundRaisedButton}"
+                                FontSize="16"
+                                Foreground="{Binding ConfirmButtonForegroundColor}"
+                                Background="{Binding ConfirmButtonBackgroundColor}" />
+                        <Button x:Name="BtnLeaveConfirmNo" Content="いいえ" Width="140" Height="50" Click="BtnLeaveConfirmNo_Click" Margin="16,0,0,0" 
+                                Style="{StaticResource SoundRaisedButton}"
+                                FontSize="16"
+                                Foreground="{Binding ForegroundColor}"
+                                Background="{Binding CardBackgroundColor}" />
+                    </StackPanel>
+                </StackPanel>
+            </Border>
+        </Grid>
+
+        <!-- Exit confirmation overlay (for closing the window) -->
+        <Grid x:Name="ExitConfirmOverlay" Visibility="Collapsed" Background="{Binding OverlayBackgroundColor}" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" IsHitTestVisible="True" Panel.ZIndex="80">
+            <Border x:Name="ExitConfirmBorder" Width="520" Padding="24" CornerRadius="8" Background="{Binding DialogBackgroundColor}" HorizontalAlignment="Center" VerticalAlignment="Center" RenderTransformOrigin="0.5,0.5">
+                <Border.RenderTransform>
+                    <ScaleTransform ScaleX="1" ScaleY="1" CenterX="0" CenterY="0" />
+                </Border.RenderTransform>
+                <StackPanel>
+                    <TextBlock Text="アプリケーションを終了しますか？" FontSize="22" FontWeight="Bold" TextAlignment="Center" Foreground="{Binding ForegroundColor}" Margin="0,0,0,8" />
+                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,24,0,0">
+                        <Button x:Name="BtnExitConfirmYes" Content="はい" Width="140" Height="50" Click="BtnExitConfirmYes_Click" 
+                                Style="{StaticResource SoundRaisedButton}"
+                                FontSize="16"
+                                Foreground="{Binding ConfirmButtonForegroundColor}"
+                                Background="{Binding ConfirmButtonBackgroundColor}" />
+                        <Button x:Name="BtnExitConfirmNo" Content="いいえ" Width="140" Height="50" Click="BtnExitConfirmNo_Click" Margin="16,0,0,0" 
+                                Style="{StaticResource SoundRaisedButton}"
+                                FontSize="16"
+                                Foreground="{Binding ForegroundColor}"
+                                Background="{Binding CardBackgroundColor}" />
+                    </StackPanel>
+                </StackPanel>
+            </Border>
+        </Grid>
+        
+        <!-- DB import confirmation overlay -->
+        <Grid x:Name="ImportToDbConfirmOverlay" Visibility="Collapsed" Background="{Binding OverlayBackgroundColor}" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" IsHitTestVisible="True" Panel.ZIndex="80">
+            <Border x:Name="ImportToDbConfirmBorder" Width="520" Padding="24" CornerRadius="8" Background="{Binding DialogBackgroundColor}" HorizontalAlignment="Center" VerticalAlignment="Center" RenderTransformOrigin="0.5,0.5">
+                <Border.RenderTransform>
+                    <ScaleTransform ScaleX="1" ScaleY="1" CenterX="0" CenterY="0" />
+                </Border.RenderTransform>
+                <StackPanel>
+                    <TextBlock x:Name="TxtImportConfirmMessage" Text="問題をDBにインポートしますか？" FontSize="22" FontWeight="Bold" TextAlignment="Center" Foreground="{Binding ForegroundColor}" Margin="0,0,0,8" />
+                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,24,0,0">
+                        <Button x:Name="BtnImportConfirmYes" Content="はい" Width="140" Height="50" Click="BtnImportConfirmYes_Click" 
+                                Style="{StaticResource SoundRaisedButton}"
+                                FontSize="16"
+                                Foreground="{Binding ConfirmButtonForegroundColor}"
+                                Background="{Binding ConfirmButtonBackgroundColor}" />
+                        <Button x:Name="BtnImportConfirmNo" Content="いいえ" Width="140" Height="50" Click="BtnImportConfirmNo_Click" Margin="16,0,0,0" 
+                                Style="{StaticResource SoundRaisedButton}"
+                                FontSize="16"
+                                Foreground="{Binding ForegroundColor}"
+                                Background="{Binding CardBackgroundColor}" />
+                    </StackPanel>
+                </StackPanel>
+            </Border>
+        </Grid>
+
+        <!-- History clear confirmation overlay -->
+        <Grid x:Name="ClearHistoryConfirmOverlay" Visibility="Collapsed" Background="{Binding OverlayBackgroundColor}" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" IsHitTestVisible="True" Panel.ZIndex="80">
+            <Border x:Name="ClearHistoryConfirmBorder" Width="520" Padding="24" CornerRadius="8" Background="{Binding DialogBackgroundColor}" HorizontalAlignment="Center" VerticalAlignment="Center" RenderTransformOrigin="0.5,0.5">
+                <Border.RenderTransform>
+                    <ScaleTransform ScaleX="1" ScaleY="1" CenterX="0" CenterY="0" />
+                </Border.RenderTransform>
+                <StackPanel>
+                    <TextBlock Text="履歴をクリアしますか？" FontSize="22" FontWeight="Bold" TextAlignment="Center" Foreground="{Binding ForegroundColor}" Margin="0,0,0,8" />
+                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,24,0,0">
+                        <Button x:Name="BtnClearHistoryConfirmYes" Content="はい" Width="140" Height="50" Click="BtnClearHistoryConfirmYes_Click" 
+                                Style="{StaticResource SoundRaisedButton}"
+                                FontSize="16"
+                                Foreground="{Binding ConfirmButtonForegroundColor}"
+                                Background="{Binding ConfirmButtonBackgroundColor}" />
+                        <Button x:Name="BtnClearHistoryConfirmNo" Content="いいえ" Width="140" Height="50" Click="BtnClearHistoryConfirmNo_Click" Margin="16,0,0,0" 
+                                Style="{StaticResource SoundRaisedButton}"
+                                FontSize="16"
+                                Foreground="{Binding ForegroundColor}"
+                                Background="{Binding CardBackgroundColor}" />
+                    </StackPanel>
+                </StackPanel>
+            </Border>
+        </Grid>
+
+        <!-- Leave lobby confirmation overlay -->
+        <Grid x:Name="LeaveLobbyConfirmOverlay" Visibility="Collapsed" Background="{Binding OverlayBackgroundColor}" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" IsHitTestVisible="True" Panel.ZIndex="80">
+            <Border x:Name="LeaveLobbyConfirmBorder" Width="520" Padding="24" CornerRadius="8" Background="{Binding DialogBackgroundColor}" HorizontalAlignment="Center" VerticalAlignment="Center" RenderTransformOrigin="0.5,0.5">
+                <Border.RenderTransform>
+                    <ScaleTransform ScaleX="1" ScaleY="1" CenterX="0" CenterY="0" />
+                </Border.RenderTransform>
+                <StackPanel>
+                    <TextBlock Text="ロビーを抜けますか？" FontSize="22" FontWeight="Bold" TextAlignment="Center" Foreground="{Binding ForegroundColor}" Margin="0,0,0,8" />
+                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,24,0,0">
+                        <Button x:Name="BtnLeaveLobbyConfirmYes" Content="はい" Width="140" Height="50" Click="BtnLeaveLobbyConfirmYes_Click" 
+                                Style="{StaticResource SoundRaisedButton}"
+                                FontSize="16"
+                                Foreground="{Binding ConfirmButtonForegroundColor}"
+                                Background="{Binding ConfirmButtonBackgroundColor}" />
+                        <Button x:Name="BtnLeaveLobbyConfirmNo" Content="いいえ" Width="140" Height="50" Click="BtnLeaveLobbyConfirmNo_Click" Margin="16,0,0,0" 
+                                Style="{StaticResource SoundRaisedButton}"
+                                FontSize="16"
+                                Foreground="{Binding ForegroundColor}"
+                                Background="{Binding CardBackgroundColor}" />
+                    </StackPanel>
+                </StackPanel>
+            </Border>
+        </Grid>
+
+        <!-- Loading overlay -->
+        <Grid x:Name="LoadingOverlay" Visibility="Collapsed" Background="{Binding OverlayBackgroundColor}" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" IsHitTestVisible="True" Panel.ZIndex="90">
+            <Border Width="400" Height="200" Padding="40" CornerRadius="16" Background="{Binding DialogBackgroundColor}" HorizontalAlignment="Center" VerticalAlignment="Center">
+                <Border.Effect>
+                    <DropShadowEffect Color="Black" Opacity="0.3" BlurRadius="12" ShadowDepth="4" />
+                </Border.Effect>
+                <StackPanel>
+                    <ProgressBar Style="{StaticResource MaterialDesignCircularProgressBar}" 
+                                 IsIndeterminate="True" 
+                                 Width="60" Height="60" 
+                                 Margin="0,0,0,24"
+                                 Foreground="{Binding AccentColor}"
+                                 HorizontalAlignment="Center" />
+                    <TextBlock x:Name="TxtLoadingMessage" Text="処理中..." FontSize="20" FontWeight="SemiBold" TextAlignment="Center" Foreground="{Binding ForegroundColor}" />
+                </StackPanel>
+            </Border>
+        </Grid>
+
+        <!-- Info overlay -->
+        <Grid x:Name="InfoOverlay" Visibility="Collapsed" Background="{Binding OverlayBackgroundColor}" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" IsHitTestVisible="True" Panel.ZIndex="90">
+            <Border x:Name="InfoBorder" Width="600" Padding="40" CornerRadius="12" Background="{Binding DialogBackgroundColor}" HorizontalAlignment="Center" VerticalAlignment="Center" RenderTransformOrigin="0.5,0.5">
+                <Border.Effect>
+                    <DropShadowEffect Color="Black" Opacity="0.3" BlurRadius="20" ShadowDepth="0" />
+                </Border.Effect>
+                <Border.RenderTransform>
+                    <ScaleTransform ScaleX="1" ScaleY="1" CenterX="0" CenterY="0" />
+                </Border.RenderTransform>
+                <StackPanel>
+                    <!-- Header -->
+                    <Grid Margin="0,0,0,32">
+                        <TextBlock Text="アプリケーション情報" FontSize="28" FontWeight="Bold" HorizontalAlignment="Center" Foreground="{Binding ForegroundColor}" />
+                    </Grid
+                    >
+                    
+                    <!-- Info content -->
+                    <StackPanel Margin="0,0,0,24">
+                        <StackPanel Orientation="Horizontal" Margin="0,0,0,20">
+                            <pack:PackIcon Kind="TagText" Width="28" Height="28" Foreground="{Binding AccentColor}" VerticalAlignment="Center" Margin="0,0,16,0" />
+                            <TextBlock Text="バージョン" FontSize="18" FontWeight="SemiBold" Foreground="{Binding SecondaryTextColor}" VerticalAlignment="Center" Width="140" />
+                            <TextBlock Text="V1.0.0" FontSize="18" Foreground="{Binding ForegroundColor}" VerticalAlignment="Center" />
+                        </StackPanel>
+                        
+                        <StackPanel Orientation="Horizontal" Margin="0,0,0,20">
+                            <pack:PackIcon Kind="Account" Width="28" Height="28" Foreground="{Binding AccentColor}" VerticalAlignment="Center" Margin="0,0,16,0" />
+                            <TextBlock Text="作成者" FontSize="18" FontWeight="SemiBold" Foreground="{Binding SecondaryTextColor}" VerticalAlignment="Center" Width="140" />
+                            <TextBlock Text="Kai Kono" FontSize="18" Foreground="{Binding ForegroundColor}" VerticalAlignment="Center" />
+                        </StackPanel>
+                        
+                        <StackPanel Orientation="Horizontal" Margin="0,0,0,20">
+                            <pack:PackIcon Kind="Copyright" Width="28" Height="28" Foreground="{Binding AccentColor}" VerticalAlignment="Center" Margin="0,0,16,0" />
+                            <TextBlock Text="Copyright" FontSize="18" FontWeight="SemiBold" Foreground="{Binding SecondaryTextColor}" VerticalAlignment="Center" Width="140" />
+                            <TextBlock Text="© 2026 Kai Kono" FontSize="18" Foreground="{Binding ForegroundColor}" VerticalAlignment="Center" />
+                        </StackPanel>
+                        
+                        <StackPanel Orientation="Horizontal" Margin="0,0,0,20">
+                            <pack:PackIcon Kind="Brain" Width="28" Height="28" Foreground="{Binding AccentColor}" VerticalAlignment="Center" Margin="0,0,16,0" />
+                            <TextBlock Text="モデル" FontSize="18" FontWeight="SemiBold" Foreground="{Binding SecondaryTextColor}" VerticalAlignment="Center" Width="140" />
+                            <TextBlock Text="-" FontSize="18" Foreground="{Binding ForegroundColor}" VerticalAlignment="Center" />
+                        </StackPanel>
+                        
+                        <StackPanel Orientation="Horizontal" Margin="0,0,0,0">
+                            <pack:PackIcon Kind="Pokeball" Width="28" Height="28" Foreground="{Binding AccentColor}" VerticalAlignment="Center" Margin="0,0,16,0" />
+                            <TextBlock Text="好きなポケモン" FontSize="18" FontWeight="SemiBold" Foreground="{Binding SecondaryTextColor}" VerticalAlignment="Center" Width="140" />
+                            <TextBlock Text="ヌオー" FontSize="18" Foreground="{Binding ForegroundColor}" VerticalAlignment="Center" />
+                        </StackPanel>
+                    </StackPanel>
+                    
+                    <!-- Close button -->
+                    <Button Content="閉じる" Width="140" Height="48" Click="BtnCloseInfo_Click" 
+                            Style="{StaticResource SoundRaisedButton}"
+                            FontSize="18"
+                            Foreground="{Binding ForegroundColor}"
+                            Background="{Binding CardBackgroundColor}"
+                            HorizontalAlignment="Center"
+                            Margin="0,8,0,0" />
+                </StackPanel>
+            </Border>
+        </Grid>
+
+        <!-- Toast notification (bottom-right) -->
+        <Border x:Name="ToastNotification" Visibility="Collapsed" 
+                Background="#4CAF50" CornerRadius="8" Padding="16,12" 
+                HorizontalAlignment="Right" VerticalAlignment="Bottom" 
+                Margin="0,0,24,24" Panel.ZIndex="100"
+                MaxWidth="320">
+            <Border.RenderTransform>
+                <TranslateTransform x:Name="ToastTransform" X="400" Y="0" />
+            </Border.RenderTransform>
+            <Border.Effect>
+                <DropShadowEffect Color="Black" Opacity="0.3" BlurRadius="12" ShadowDepth="4" />
+            </Border.Effect>
+            <StackPanel Orientation="Horizontal">
+                <pack:PackIcon x:Name="ToastIcon" Kind="Check" Width="20" Height="20" Foreground="White" VerticalAlignment="Center" Margin="0,0,12,0" />
+                <TextBlock x:Name="ToastText" Text="コピーしました" 
+                           FontSize="14" Foreground="White" VerticalAlignment="Center" 
+                           TextWrapping="Wrap" />
+            </StackPanel>
+        </Border>
 
     </Grid>
 </Window>

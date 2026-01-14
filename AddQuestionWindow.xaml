@@ -1,0 +1,22 @@
+<Window x:Class="Kuiz.AddQuestionWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Add Question" Height="260" Width="600" WindowStartupLocation="CenterOwner" ResizeMode="NoResize">
+    <Grid Margin="12">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+
+        <TextBlock Text="Question" FontWeight="Bold" />
+        <TextBox x:Name="TxtQ" Grid.Row="1" TextWrapping="Wrap" AcceptsReturn="True" Height="100" />
+
+        <StackPanel Grid.Row="2" Orientation="Horizontal" VerticalAlignment="Center" HorizontalAlignment="Right">
+            <TextBlock Text="Answer:" VerticalAlignment="Center" Margin="0,0,8,0" />
+            <TextBox x:Name="TxtA" Width="240" />
+            <Button x:Name="BtnSave" Content="Save" Width="90" Margin="8,0,0,0" Click="BtnSave_Click" />
+            <Button x:Name="BtnCancel" Content="Cancel" Width="90" Margin="8,0,0,0" Click="BtnCancel_Click" />
+        </StackPanel>
+    </Grid>
+</Window>

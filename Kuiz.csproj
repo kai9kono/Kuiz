@@ -8,4 +8,41 @@
     <UseWPF>true</UseWPF>
   </PropertyGroup>
 
+  <ItemGroup>
+    <None Remove="Resources\img\button-pressed.png" />
+    <None Remove="Resources\img\button-unavailable.png" />
+    <None Remove="Resources\img\button-unpressed.png" />
+    <None Remove="Resources\sound\play-button-press.mp3" />
+    <None Remove="Resources\sound\swipe.mp3" />
+    <None Remove="Resources\sound\ui-button-hover.mp3" />
+    <None Remove="Resources\sound\ui-button-press.mp3" />
+    <None Remove="Resources\sound\correct.mp3" />
+    <None Remove="Resources\sound\incorrect.mp3" />
+    <None Remove="Resources\sound\question.mp3" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="KuizServer\KuizServer.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.AspNetCore.SignalR.Client" Version="10.0.2" />
+    <PackageReference Include="Npgsql" Version="10.0.1" />
+    <PackageReference Include="MaterialDesignThemes" Version="4.5.0" />
+    <PackageReference Include="MaterialDesignColors" Version="2.8.1" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Resource Include="Resources\img\button-pressed.png" />
+    <Resource Include="Resources\img\button-unavailable.png" />
+    <Resource Include="Resources\img\button-unpressed.png" />
+    <Resource Include="Resources\sound\play-button-press.mp3" />
+    <Resource Include="Resources\sound\swipe.mp3" />
+    <Resource Include="Resources\sound\ui-button-hover.mp3" />
+    <Resource Include="Resources\sound\ui-button-press.mp3" />
+    <Resource Include="Resources\sound\correct.mp3" />
+    <Resource Include="Resources\sound\incorrect.mp3" />
+    <Resource Include="Resources\sound\question.mp3" />
+  </ItemGroup>
+
 </Project>
