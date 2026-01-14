@@ -225,8 +225,10 @@ namespace Kuiz
 
         private void BtnBackToLobby_Click(object sender, RoutedEventArgs e)
         {
-            // Stop all sounds
-            _soundService.StopAll();
+            Logger.LogInfo("?? Back to lobby clicked");
+            
+            // Stop game flow (sounds, tasks, etc.)
+            StopGameFlow();
             
             // Return to appropriate lobby
             if (_isHost)
@@ -255,18 +257,15 @@ namespace Kuiz
         
         private async void BtnLeaveConfirmYes_Click(object sender, RoutedEventArgs e)
         {
+            Logger.LogInfo("? Leave game confirmed");
+            
             LeaveConfirmOverlay.Visibility = Visibility.Collapsed;
             LeaveConfirmOverlay.IsHitTestVisible = false;
             
-            // Stop all sounds immediately
-            _soundService.StopAll();
+            // Stop game flow (sounds, tasks, reveal loop, etc.)
+            StopGameFlow();
             
-            // Cancel ongoing reveal task
-            _revealCts?.Cancel();
-            _revealCts?.Dispose();
-            _revealCts = null;
-            
-            // Stop the poll state loop for clients
+            // Cancel ongoing poll state loop for clients
             _pollStateCts?.Cancel();
             _pollStateCts?.Dispose();
             _pollStateCts = null;

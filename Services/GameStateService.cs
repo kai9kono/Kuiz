@@ -51,6 +51,7 @@ namespace Kuiz.Services
         public bool FastReveal { get; set; }
         public bool CorrectAnswered { get; set; }
         public string? LastCorrectPlayer { get; set; }
+        public DateTime? RevealCompletedTime { get; set; }
 
         public void Reset()
         {
@@ -73,6 +74,7 @@ namespace Kuiz.Services
             FastReveal = false;
             CorrectAnswered = false;
             LastCorrectPlayer = null;
+            RevealCompletedTime = null;
             AttemptedThisQuestion.Clear();
             BuzzOrder.Clear();
         }
@@ -124,6 +126,7 @@ namespace Kuiz.Services
             BuzzOrder.Add(playerName);
             AttemptedThisQuestion.Add(playerName);
             PausedForBuzz = true;
+            Logger.LogInfo($"? Buzz accepted from {playerName}");
             return true;
         }
 
@@ -189,6 +192,7 @@ namespace Kuiz.Services
 
             if (correct)
             {
+                Logger.LogInfo($"? Correct answer from {playerName}");
                 if (!Scores.ContainsKey(playerName)) Scores[playerName] = 0;
                 Scores[playerName]++;
                 CorrectAnswered = true;
@@ -197,8 +201,13 @@ namespace Kuiz.Services
             }
             else
             {
+                Logger.LogInfo($"? Incorrect answer from {playerName}: '{answer}'");
+                
+                // Count mistake for incorrect answer (not timeout)
                 if (!Mistakes.ContainsKey(playerName)) Mistakes[playerName] = 0;
                 Mistakes[playerName]++;
+                Logger.LogInfo($"   {playerName} now has {Mistakes[playerName]} mistake(s)");
+                
                 BuzzOrder.Clear();
                 PausedForBuzz = false;
             }

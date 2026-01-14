@@ -104,40 +104,47 @@ namespace Kuiz
             }
             else
             {
+                // Timeout - mistake already counted in CleanupAnswerOverlay
+                Logger.LogInfo($"?? No answer from {name} (timeout)");
                 _gameState.PausedForBuzz = false;
-                _gameState.AttemptedThisQuestion.Add(name);
-                if (!_gameState.Mistakes.ContainsKey(name)) _gameState.Mistakes[name] = 0;
-                _gameState.Mistakes[name]++;
                 _gameState.BuzzOrder.Clear();
                 UpdateGameUi();
-                //ShowTemporaryGameStatus($"No answer from {name} ? they cannot buzz again for this question", 4000);
             }
         }
 
         private async Task HandleClientBuzzAsync(string name)
         {
-            var hostUrl = "http://localhost:5000/";
+            if (_gameState.PausedForBuzz || _gameState.BuzzOrder.Count > 0)
+            {
+                TxtGameStatus.Text = "Already answering";
+                return;
+            }
+
+            if (_gameState.AttemptedThisQuestion.Contains(name))
+            {
+                TxtGameStatus.Text = "You already attempted this question";
+                return;
+            }
+
             try
             {
-                var obj = new { name };
-                var content = new StringContent(JsonSerializer.Serialize(obj), Encoding.UTF8, "application/json");
-                var res = await _httpClient.PostAsync(new Uri(new Uri(hostUrl), "/buzz"), content);
+                // Send buzz via SignalR
+                await _signalRClient.SendBuzzAsync();
+                Logger.LogInfo("?? Buzz sent via SignalR");
+                
+                // Add to local buzz order for immediate feedback
+                _gameState.ProcessBuzz(name);
+                UpdateGameUi();
+                TxtGameStatus.Text = "Waiting for answer...";
 
-                if (!res.IsSuccessStatusCode)
-                {
-                    TxtGameStatus.Text = "Buzz rejected: " + (int)res.StatusCode;
-                    return;
-                }
-
-                TxtGameStatus.Text = "Buzz sent";
                 var answer = await ShowAnswerDialog(10);
 
                 if (answer != null)
                 {
-                    var sub = new { name, answer };
-                    var c2 = new StringContent(JsonSerializer.Serialize(sub), Encoding.UTF8, "application/json");
-                    var r2 = await _httpClient.PostAsync(new Uri(new Uri(hostUrl), "/answer"), c2);
-                    TxtGameStatus.Text = r2.IsSuccessStatusCode ? "Answer sent" : "Answer send failed";
+                    // Send answer via SignalR
+                    await _signalRClient.SendAnswerAsync(answer);
+                    Logger.LogInfo($"?? Answer sent via SignalR: {answer}");
+                    TxtGameStatus.Text = "Answer sent";
                 }
                 else
                 {
@@ -318,13 +325,28 @@ namespace Kuiz
             _answerOverlayCts = null;
             _answerOverlayTcs = null;
 
-            // Count timeout as mistake
+            // Count timeout as mistake - but only if not already counted
             var current = _gameState.BuzzOrder.Count > 0 ? _gameState.BuzzOrder[0] : null;
             if (current != null && !_gameState.AttemptedThisQuestion.Contains(current))
             {
+                Logger.LogInfo($"?? Answer timeout for {current} - counting as mistake");
                 _gameState.AttemptedThisQuestion.Add(current);
-                if (!_gameState.Mistakes.ContainsKey(current)) _gameState.Mistakes[current] = 0;
+                
+                // Initialize mistakes if not present
+                if (!_gameState.Mistakes.ContainsKey(current))
+                {
+                    _gameState.Mistakes[current] = 0;
+                }
+                
+                // Only increment if this exact timeout hasn't been counted yet
                 _gameState.Mistakes[current]++;
+                Logger.LogInfo($"   {current} now has {_gameState.Mistakes[current]} mistake(s)");
+                
+                UpdateGameUi();
+            }
+            else if (current != null)
+            {
+                Logger.LogInfo($"?? Answer timeout for {current} - already attempted, not counting again");
             }
 
             _ = HandleGameEndAsync(ensureAnswerReveal: true);
@@ -383,6 +405,19 @@ namespace Kuiz
 
         private async Task StartNextQuestionAsync()
         {
+            // Cancel any active answer dialog before starting new question
+            _answerOverlayCts?.Cancel();
+            _answerOverlayTcs?.TrySetCanceled();
+            
+            // Force cleanup of answer overlay
+            Dispatcher.Invoke(() =>
+            {
+                AnswerOverlay.Visibility = Visibility.Collapsed;
+                AnswerOverlay.IsHitTestVisible = false;
+                TxtAnsweringBadge.Visibility = Visibility.Collapsed;
+                _isAnswerDialogOpen = false;
+            });
+
             if (_gameEnded || await HandleGameEndAsync())
             {
                 return;
@@ -449,7 +484,9 @@ namespace Kuiz
                 TxtGameQuestion.Text = string.Empty;
                 TxtGameQuestion.TextAlignment = prevAlign;
                 TxtGameQuestion.FontWeight = prevWeight;
+                
                 if (BtnGameBuzz != null) BtnGameBuzz.IsEnabled = true;
+                UpdateBuzzButtonState();
             });
         }
 
@@ -487,6 +524,10 @@ namespace Kuiz
 
                 if (!ct.IsCancellationRequested)
                 {
+                    // Record the time when question reveal completed
+                    _gameState.RevealCompletedTime = DateTime.UtcNow;
+                    Logger.LogInfo($"?? Question reveal completed at {_gameState.RevealCompletedTime:HH:mm:ss.fff}");
+                    
                     await HandleRevealCompleteAsync(ct);
                 }
             }
@@ -505,9 +546,50 @@ namespace Kuiz
             }
             else
             {
+                // Wait for any ongoing answer dialog to complete before showing answer
                 await WaitForAnsweringPlayerAsync(ct);
+                
+                // Wait for the "next question" timer (5 seconds)
                 await ShowNextTimerAsync(5, ct);
-                await ShowAnswerRevealAsync(question, ct);
+                
+                // タイマー終了時の最終チェック: 誰かが回答中か確認
+                Logger.LogInfo("?? Timer ended - checking if anyone is answering...");
+                
+                // タイマー終了直前にバズされた可能性があるので、少し待つ
+                if (_isAnswerDialogOpen || _gameState.PausedForBuzz)
+                {
+                    Logger.LogInfo("?? Someone buzzed near timer end - waiting for their answer...");
+                    
+                    // 回答ダイアログが完了するまで待機 (最大15秒)
+                    var waitStartTime = DateTime.UtcNow;
+                    var maxWaitTime = TimeSpan.FromSeconds(15);
+                    
+                    while (!ct.IsCancellationRequested && 
+                           (_isAnswerDialogOpen || _gameState.PausedForBuzz) &&
+                           DateTime.UtcNow - waitStartTime < maxWaitTime)
+                    {
+                        await Task.Delay(100, ct);
+                    }
+                    
+                    if (_isAnswerDialogOpen || _gameState.PausedForBuzz)
+                    {
+                        Logger.LogInfo("?? Wait timeout - proceeding to show answer");
+                    }
+                    else
+                    {
+                        Logger.LogInfo("? Answer completed - now showing correct answer");
+                    }
+                }
+                
+                // 誰かが正解していないか最終確認
+                if (!_gameState.CorrectAnswered)
+                {
+                    await ShowAnswerRevealAsync(question, ct);
+                }
+                else
+                {
+                    Logger.LogInfo("? Someone answered correctly during wait - skipping answer reveal");
+                }
             }
 
             _gameState.BuzzOrder.Clear();
@@ -552,8 +634,18 @@ namespace Kuiz
 
         private async Task WaitForAnsweringPlayerAsync(CancellationToken ct)
         {
+            var timeout = TimeSpan.FromSeconds(15); // Maximum wait time for answer
+            var startTime = DateTime.UtcNow;
+            
             while (!ct.IsCancellationRequested && _gameState.PausedForBuzz)
             {
+                // Check if we've exceeded timeout
+                if (DateTime.UtcNow - startTime > timeout)
+                {
+                    Logger.LogInfo("?? WaitForAnsweringPlayer timeout - continuing to next question");
+                    break;
+                }
+                
                 try { await Task.Delay(100, ct); }
                 catch (OperationCanceledException) { break; }
             }
@@ -575,6 +667,9 @@ namespace Kuiz
         private async Task ShowNextTimerAsync(int seconds, CancellationToken ct)
         {
             if (seconds <= 0) return;
+
+            // タイマー中もバズは有効 (タイマー終了時にチェック)
+            Logger.LogInfo("?? Answer reveal timer started (buzzing still allowed)");
 
             const int intervalMs = 30;
             var totalMs = seconds * 1000;
@@ -1023,7 +1118,17 @@ namespace Kuiz
 
         private void Window_PreviewKeyDown(object sender, KeyEventArgs e)
         {
-            if (e.Key == Key.Space && GamePanel.Visibility == Visibility.Visible)
+            // Check for both half-width and full-width space
+            bool isSpacePressed = e.Key == Key.Space;
+            
+            // Also check for full-width space via text input (IME)
+            if (!isSpacePressed && e.Key == Key.ImeProcessed)
+            {
+                // Will be handled by PreviewTextInput for full-width space
+                return;
+            }
+            
+            if (isSpacePressed && GamePanel.Visibility == Visibility.Visible)
             {
                 if (_isPreDisplay)
                 {
@@ -1113,6 +1218,8 @@ namespace Kuiz
             }
         }
 
+
+
         private void BtnEndGame_Click(object sender, RoutedEventArgs e)
         {
             if (_gameState.Scores.Count == 0)
@@ -1126,5 +1233,45 @@ namespace Kuiz
             var winner = _gameState.GetWinner() ?? "No winner";
             ShowResult(winner);
         }
+
+        private void StopGameFlow()
+        {
+            Logger.LogInfo("?? Stopping game flow (canceling tasks, stopping sounds)");
+            
+            // Cancel reveal loop
+            _revealCts?.Cancel();
+            _revealTask = null;
+            
+            // Cancel answer overlay
+            _answerOverlayCts?.Cancel();
+            _answerOverlayTcs?.TrySetCanceled();
+            
+            // Stop all sounds
+            _soundService.StopAll();
+            
+            // Reset game state flags
+            _gameEnded = true;
+            _isAnswerDialogOpen = false;
+            _isPreDisplay = false;
+            _correctOverlayShown = false;
+            Interlocked.Exchange(ref _isAdvancing, 0);
+            
+            // Hide overlays
+            Dispatcher.Invoke(() =>
+            {
+                AnswerOverlay.Visibility = Visibility.Collapsed;
+                AnswerOverlay.IsHitTestVisible = false;
+                ResultOverlay.Visibility = Visibility.Collapsed;
+                ResultOverlay.IsHitTestVisible = false;
+                TxtAnsweringBadge.Visibility = Visibility.Collapsed;
+                TxtAnswerReveal.Visibility = Visibility.Collapsed;
+                PbNextTimer.Visibility = Visibility.Collapsed;
+                TxtGameStatus.Visibility = Visibility.Collapsed;
+            });
+            
+            Logger.LogInfo("? Game flow stopped");
+        }
     }
 }
+
+

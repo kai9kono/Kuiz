@@ -97,6 +97,48 @@ namespace Kuiz
             _ = TestApiConnectionOnStartup();
         }
         
+        private void SetupHostServiceEvents()
+        {
+            // Setup SignalR host service event handlers
+            _hostService.OnPlayerRegistered = async (playerName) =>
+            {
+                await Dispatcher.InvokeAsync(() =>
+                {
+                    Logger.LogInfo($"📥 Player registered via SignalR: {playerName}");
+                    
+                    if (!_gameState.LobbyPlayers.Contains(playerName))
+                    {
+                        _gameState.AddPlayer(playerName);
+                        UpdateLobbyUi();
+                    }
+                });
+                
+                return true;
+            };
+            
+            _hostService.OnBuzzReceived = async (playerName) =>
+            {
+                await Dispatcher.InvokeAsync(() =>
+                {
+                    Logger.LogInfo($"🔔 Buzz received from: {playerName}");
+                    // Buzz handling logic here
+                });
+                
+                return true;
+            };
+            
+            _hostService.OnAnswerReceived = async (playerName, answer) =>
+            {
+                await Dispatcher.InvokeAsync(() =>
+                {
+                    Logger.LogInfo($"💬 Answer received from {playerName}: {answer}");
+                    // Answer handling logic here
+                });
+                
+                return true;
+            };
+        }
+        
         // Sound event handlers for buttons
         private void Button_MouseEnter(object sender, MouseEventArgs e)
         {
@@ -106,6 +148,59 @@ namespace Kuiz
         private void Button_PreviewMouseLeftButtonDown(object sender, MouseButtonEventArgs e)
         {
             _soundService.PlayPress();
+        }
+        
+        // Handle full-width space for buzz (全角スペース)
+        private void Window_PreviewTextInput(object sender, TextCompositionEventArgs e)
+        {
+            // Check for full-width space (U+3000)
+            if (e.Text == "　" && GamePanel.Visibility == Visibility.Visible)
+            {
+                e.Handled = true;
+                
+                if (_isPreDisplay)
+                {
+                    return;
+                }
+
+                var now = DateTime.UtcNow;
+                if (now - _lastSpaceTime < _spaceCooldown)
+                {
+                    return;
+                }
+
+                var myName = _profileService.PlayerName ?? TxtJoinPlayerName?.Text?.Trim() ?? string.Empty;
+                bool canBuzz = !string.IsNullOrEmpty(myName) && !_isPreDisplay;
+
+                if (_gameState.Mistakes.GetValueOrDefault(myName, 0) >= _gameState.MaxMistakes)
+                {
+                    canBuzz = false;
+                }
+
+                if (_gameState.BuzzOrder.Count > 0 && _gameState.BuzzOrder[0] != myName)
+                {
+                    canBuzz = false;
+                }
+
+                if (_gameState.AttemptedThisQuestion.Contains(myName))
+                {
+                    canBuzz = false;
+                }
+
+                if (!canBuzz)
+                {
+                    Dispatcher.Invoke(() =>
+                    {
+                        TxtGameStatus.Text = "Cannot buzz";
+                        UpdateBuzzButtonState();
+                    });
+                    return;
+                }
+
+                _lastSpaceTime = now;
+                _soundService.PlayBuzz();
+                _ = HandleBuzzAsync();
+            }
         }
         
         private void AnimateConfirmOverlayOpen(System.Windows.Controls.Border border)

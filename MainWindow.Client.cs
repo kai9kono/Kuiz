@@ -57,13 +57,23 @@ namespace Kuiz
                     TxtJoinStatus.Text = "ロビーに参加しました！";
                     _profileService.Save(name);
                     
+                    // Mark as client (not host)
+                    _isHost = false;
+                    
                     // Setup SignalR event handlers
                     SetupSignalRClientHandlers();
+                    
+                    // Get lobby state and show lobby panel
+                    await UpdateClientLobbyState(lobbyCode);
                     
                     // Wait a moment before switching panels
                     await Task.Delay(500);
                     
-                    ShowPanel(GamePanel);
+                    // Show host panel in read-only mode (client view)
+                    ShowPanel(HostPanel);
+                    
+                    // Disable host-only controls
+                    SetClientLobbyMode();
                 }
                 else
                 {
@@ -96,7 +106,14 @@ namespace Kuiz
             {
                 Dispatcher.Invoke(() =>
                 {
-                    Logger.LogInfo($"Player joined: {playerName}");
+                    Logger.LogInfo($"?? Player joined: {playerName}");
+                    
+                    // Add player to lobby list
+                    if (!_gameState.LobbyPlayers.Contains(playerName))
+                    {
+                        _gameState.AddPlayer(playerName);
+                        UpdateLobbyUi();
+                    }
                 });
             };
 
@@ -104,7 +121,11 @@ namespace Kuiz
             {
                 Dispatcher.Invoke(() =>
                 {
-                    Logger.LogInfo($"Player left: {playerName}");
+                    Logger.LogInfo($"?? Player left: {playerName}");
+                    
+                    // Remove player from lobby list
+                    _gameState.LobbyPlayers.Remove(playerName);
+                    UpdateLobbyUi();
                 });
             };
 
@@ -112,15 +133,68 @@ namespace Kuiz
             {
                 Dispatcher.Invoke(() =>
                 {
-                    Logger.LogInfo($"Player buzzed: {playerName}");
+                    Logger.LogInfo($"?? Player buzzed: {playerName}");
+                    
+                    // Handle buzz in game (simplified - just log for now)
+                    // Full buzz handling is done on host side
                 });
             };
 
-            _signalRClient.OnGameStarting += (settings) =>
+            _signalRClient.OnGameStarting += async (settings) =>
             {
-                Dispatcher.Invoke(() =>
+                await Dispatcher.InvokeAsync(async () =>
                 {
-                    Logger.LogInfo("Game starting");
+                    Logger.LogInfo("?? Game starting!");
+                    
+                    // Parse game settings
+                    try
+                    {
+                        var settingsJson = System.Text.Json.JsonSerializer.Serialize(settings);
+                        var gameSettings = System.Text.Json.JsonSerializer.Deserialize<GameSettings>(settingsJson);
+                        
+                        if (gameSettings != null)
+                        {
+                            // Initialize game state from settings
+                            _gameState.PointsToWin = gameSettings.PointsToWin;
+                            _gameState.MaxMistakes = gameSettings.MaxMistakes;
+                            
+                            // Initialize players
+                            _gameState.LobbyPlayers.Clear();
+                            foreach (var player in gameSettings.Players)
+                            {
+                                _gameState.AddPlayer(player);
+                            }
+                            
+                            // Initialize scores
+                            _gameState.Scores.Clear();
+                            foreach (var kvp in gameSettings.Scores)
+                            {
+                                _gameState.Scores[kvp.Key] = kvp.Value;
+                            }
+                            
+                            // Initialize mistakes
+                            _gameState.Mistakes.Clear();
+                            foreach (var kvp in gameSettings.Mistakes)
+                            {
+                                _gameState.Mistakes[kvp.Key] = kvp.Value;
+                            }
+                            
+                            _gameState.InitializeScores();
+                            
+                            Logger.LogInfo($"?? Game initialized with {gameSettings.Players.Count} players");
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        Logger.LogError($"Failed to parse game settings: {ex.Message}");
+                    }
+                    
+                    // Show countdown
+                    await ShowGameStartCountdownAsync();
+                    
+                    // Switch to game panel
+                    ShowPanel(GamePanel);
+                    UpdateGameUi();
                 });
             };
 
@@ -128,9 +202,122 @@ namespace Kuiz
             {
                 Dispatcher.Invoke(() =>
                 {
-                    Logger.LogInfo("Game ended");
+                    Logger.LogInfo("?? Game ended");
+                    // Handle game end
                 });
             };
+        }
+
+        private async Task UpdateClientLobbyState(string lobbyCode)
+        {
+            try
+            {
+                var state = await _signalRClient.GetLobbyStateAsync();
+                
+                // Parse lobby state
+                var stateJson = System.Text.Json.JsonSerializer.Serialize(state);
+                var lobbyState = System.Text.Json.JsonSerializer.Deserialize<LobbyState>(stateJson);
+                
+                if (lobbyState != null && lobbyState.Exists)
+                {
+                    Logger.LogInfo($"?? Lobby state: {lobbyState.PlayerCount} players");
+                    
+                    // Update lobby code display
+                    TxtLobbyCode.Text = lobbyState.Code;
+                    
+                    // Update player list
+                    _gameState.LobbyPlayers.Clear();
+                    foreach (var player in lobbyState.Players)
+                    {
+                        _gameState.AddPlayer(player);
+                    }
+                    
+                    UpdateLobbyUi();
+                }
+            }
+            catch (Exception ex)
+            {
+                Logger.LogError($"Failed to get lobby state: {ex.Message}");
+                Logger.LogError(ex);
+            }
+        }
+
+        private void SetClientLobbyMode()
+        {
+            // Disable host-only controls
+            BtnHostStartGame.IsEnabled = false;
+            BtnHostStartGame.Opacity = 0.5;
+            BtnHostStartGame.ToolTip = "ホストのみが開始できます";
+            
+            // Disable game settings
+            TxtPointsToWin.IsReadOnly = true;
+            TxtMaxMistakes.IsReadOnly = true;
+            TxtNumQuestions.IsReadOnly = true;
+            
+            // Hide increment/decrement buttons
+            // Find buttons in the visual tree
+            var pointsGrid = TxtPointsToWin.Parent as System.Windows.Controls.Grid;
+            if (pointsGrid != null)
+            {
+                foreach (var child in pointsGrid.Children)
+                {
+                    if (child is System.Windows.Controls.Button btn)
+                    {
+                        btn.IsEnabled = false;
+                        btn.Opacity = 0.3;
+                    }
+                }
+            }
+            
+            var mistakesGrid = TxtMaxMistakes.Parent as System.Windows.Controls.Grid;
+            if (mistakesGrid != null)
+            {
+                foreach (var child in mistakesGrid.Children)
+                {
+                    if (child is System.Windows.Controls.Button btn)
+                    {
+                        btn.IsEnabled = false;
+                        btn.Opacity = 0.3;
+                    }
+                }
+            }
+            
+            var questionsGrid = TxtNumQuestions.Parent as System.Windows.Controls.Grid;
+            if (questionsGrid != null)
+            {
+                foreach (var child in questionsGrid.Children)
+                {
+                    if (child is System.Windows.Controls.Button btn)
+                    {
+                        btn.IsEnabled = false;
+                        btn.Opacity = 0.3;
+                    }
+                }
+            }
+            
+            Logger.LogInfo("?? Client lobby mode enabled (read-only)");
+        }
+
+        // Helper class for lobby state deserialization
+        private class LobbyState
+        {
+            public bool Exists { get; set; }
+            public string Code { get; set; } = string.Empty;
+            public string Host { get; set; } = string.Empty;
+            public List<string> Players { get; set; } = new();
+            public int PlayerCount { get; set; }
+            public int MaxPlayers { get; set; }
+        }
+
+        // Helper class for game settings deserialization
+        private class GameSettings
+        {
+            public int PointsToWin { get; set; }
+            public int MaxMistakes { get; set; }
+            public int NumQuestions { get; set; }
+            public List<string> Players { get; set; } = new();
+            public Dictionary<string, int> Scores { get; set; } = new();
+            public Dictionary<string, int> Mistakes { get; set; } = new();
         }
 
         // Legacy HTTP polling - replaced by SignalR

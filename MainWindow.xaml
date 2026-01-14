@@ -9,7 +9,9 @@
         Title="Kuiz" Height="1080" Width="1920" 
         WindowStyle="None" ResizeMode="NoResize" WindowStartupLocation="Manual" 
         Left="0" Top="0" 
-        PreviewKeyDown="Window_PreviewKeyDown" Closing="Window_Closing"
+        PreviewKeyDown="Window_PreviewKeyDown" 
+        PreviewTextInput="Window_PreviewTextInput"
+        Closing="Window_Closing"
         Background="{Binding BackgroundColor}"
         BorderThickness="0"
         AllowsTransparency="False">

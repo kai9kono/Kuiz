@@ -37,7 +37,27 @@ namespace Kuiz
 
         private void BtnHostBack_Click(object sender, RoutedEventArgs e)
         {
-            Logger.LogInfo("BtnHostBack_Click called - showing leave lobby confirmation");
+            Logger.LogInfo($"BtnHostBack_Click called - isHost: {_isHost}");
+            
+            // Update confirmation message based on host/client status
+            var confirmText = _isHost 
+                ? "ロビーを閉じてタイトルに戻りますか？\n（全員が切断されます）"
+                : "ロビーから抜けますか？";
+            
+            // Find the TextBlock in LeaveLobbyConfirmOverlay and update its text
+            var border = LeaveLobbyConfirmBorder;
+            if (border?.Child is System.Windows.Controls.StackPanel stackPanel)
+            {
+                foreach (var child in stackPanel.Children)
+                {
+                    if (child is System.Windows.Controls.TextBlock textBlock)
+                    {
+                        textBlock.Text = confirmText;
+                        break;
+                    }
+                }
+            }
+            
             // Show confirmation overlay before leaving lobby
             LeaveLobbyConfirmOverlay.Visibility = Visibility.Visible;
             LeaveLobbyConfirmOverlay.IsHitTestVisible = true;
@@ -258,6 +278,31 @@ namespace Kuiz
             // Record game start in player stats
             _playerStatsService.OnGameStarted();
 
+            // Notify clients via SignalR that game is starting
+            if (_hostService.IsRunning)
+            {
+                try
+                {
+                    var gameSettings = new
+                    {
+                        PointsToWin = pointsToWin,
+                        MaxMistakes = maxMistakes,
+                        NumQuestions = numQuestions,
+                        Players = _gameState.LobbyPlayers.ToList(),
+                        Scores = _gameState.Scores.ToDictionary(kv => kv.Key, kv => kv.Value),
+                        Mistakes = _gameState.Mistakes.ToDictionary(kv => kv.Key, kv => kv.Value)
+                    };
+                    
+                    await _hostService.NotifyGameStartAsync(gameSettings);
+                    Logger.LogInfo("?? Game start notification sent to all clients with player list");
+                }
+                catch (Exception ex)
+                {
+                    Logger.LogError($"Failed to notify game start: {ex.Message}");
+                    Logger.LogError(ex);
+                }
+            }
+
             await ShowGameStartCountdownAsync();
 
             ShowPanel(GamePanel);
@@ -422,109 +467,6 @@ namespace Kuiz
                 };
                 ToastTransform.BeginAnimation(System.Windows.Media.TranslateTransform.XProperty, slideOut);
             });
-        }
-
-        private void SetupHostServiceEvents()
-        {
-            _hostService.OnPlayerRegistered = async (name) =>
-            {
-                if (_gameState.LobbyPlayers.Count >= HostService.MaxPlayers)
-                {
-                    return false;
-                }
-                
-                _gameState.AddPlayer(name);
-                Dispatcher.Invoke(() =>
-                {
-                    UpdateLobbyUi();
-                    UpdatePlayerCountDisplay();
-                });
-                return true;
-            };
-
-            _hostService.OnBuzzReceived = async (name) =>
-            {
-                return _gameState.ProcessBuzz(name);
-            };
-
-            _hostService.OnAnswerReceived = async (name, answer) =>
-            {
-                var correct = _gameState.ProcessAnswer(name, answer);
-                
-                // Record stats for the current player
-                var myName = _profileService.PlayerName;
-                if (name == myName)
-                {
-                    if (correct)
-                    {
-                        _playerStatsService.OnCorrectAnswer();
-                    }
-                    else
-                    {
-                        _playerStatsService.OnMistake();
-                    }
-                }
-
-                if (correct)
-                {
-                    _correctOverlayShown = true;
-                    _gameState.PausedForBuzz = true;
-
-                    Dispatcher.Invoke(() =>
-                    {
-                        TxtOverlayStatus.Text = "正解！";
-                        TxtOverlayDetail.Text = string.Empty;
-                        ResultOverlay.Visibility = Visibility.Visible;
-                        ResultOverlay.IsHitTestVisible = true;
-                        AnimateOverlayOpen(ResultOverlayBorder);
-                        UpdateGameUi();
-                    });
-
-                    await Task.Delay(1000);
-                    HideOverlay();
-                    _gameState.PausedForBuzz = false;
-                }
-                else
-                {
-                    var mistakes = _gameState.Mistakes.GetValueOrDefault(name, 0);
-                    Dispatcher.Invoke(() =>
-                    {
-                        TxtGameStatus.Text = $"不正解: {name} (ミス数: {mistakes})";
-                        TxtOverlayStatus.Text = "不正解...";
-                        //TxtOverlayDetail.Text = $"ミス数: {mistakes}";
-                        ResultOverlay.Visibility = Visibility.Visible;
-                        ResultOverlay.IsHitTestVisible = true;
-                        AnimateOverlayOpen(ResultOverlayBorder);
-                    });
-
-                    await Task.Delay(1500);
-                    HideOverlay();
-                    UpdateGameUi();
-                }
-
-                await HandleGameEndAsync(ensureAnswerReveal: true);
-                return correct;
-            };
-
-            _hostService.OnStateRequested = async () =>
-            {
-                return new
-                {
-                    questionIndex = _gameState.QueuePosition,
-                    revealed = _gameState.RevealedText,
-                    buzzOrder = _gameState.BuzzOrder.ToList(),
-                    scores = _gameState.Scores.ToDictionary(kv => kv.Key, kv => kv.Value),
-                    mistakes = _gameState.Mistakes.ToDictionary(kv => kv.Key, kv => kv.Value),
-                    sessionId = _gameState.SessionId
-                };
-            };
-
-            _hostService.OnNextQuestionRequested = async () =>
-            {
-                _gameState.BuzzOrder.Clear();
-                await StartNextQuestionAsync();
-                UpdateGameUi();
-            };
         }
 
         private async Task LoadQuestionsAsync()
