@@ -28,10 +28,20 @@ builder.Services.AddCors(options =>
 // Add singleton services for game management
 builder.Services.AddSingleton<LobbyService>();
 builder.Services.AddSingleton<GameRoomService>();
+builder.Services.AddSingleton<QuestionService>();
+
 
 var app = builder.Build();
 
+// Initialize database
+using (var scope = app.Services.CreateScope())
+{
+    var questionService = scope.ServiceProvider.GetRequiredService<QuestionService>();
+    await questionService.InitializeDatabaseAsync();
+}
+
 // Configure the HTTP request pipeline
+
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
