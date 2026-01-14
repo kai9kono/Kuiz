@@ -76,6 +76,9 @@ ScaffoldingReadMe.txt
 # StyleCop
 StyleCopReport.xml
 
+#ISS File
+*.iss
+
 # Files built by Visual Studio
 *_i.c
 *_p.c
