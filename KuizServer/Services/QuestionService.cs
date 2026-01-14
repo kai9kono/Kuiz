@@ -15,7 +15,14 @@ public class QuestionService
         _connectionString = Environment.GetEnvironmentVariable("DATABASE_URL") 
             ?? configuration.GetConnectionString("DefaultConnection")
             ?? "Host=localhost;Port=5432;Database=kuiz;Username=postgres;Password=postgres";
+        
+        // Log connection info (without password)
+        var maskedConnection = _connectionString.Contains("Password=") 
+            ? _connectionString.Substring(0, _connectionString.IndexOf("Password=")) + "Password=***" 
+            : _connectionString;
+        Console.WriteLine($"?? Database connection: {maskedConnection}");
     }
+
 
     public async Task<List<Question>> GetAllQuestionsAsync()
     {
@@ -158,20 +165,32 @@ public class QuestionService
 
     public async Task InitializeDatabaseAsync()
     {
-        await using var conn = new NpgsqlConnection(_connectionString);
-        await conn.OpenAsync();
-        
-        // Create questions table if not exists
-        await using var cmd = new NpgsqlCommand(@"
-            CREATE TABLE IF NOT EXISTS questions (
-                id SERIAL PRIMARY KEY,
-                text TEXT NOT NULL,
-                answer TEXT NOT NULL,
-                author TEXT,
-                created_at TIMESTAMP NOT NULL DEFAULT NOW(),
-                played_at TIMESTAMP
-            )", conn);
-        
-        await cmd.ExecuteNonQueryAsync();
+        try
+        {
+            Console.WriteLine("?? Initializing database...");
+            await using var conn = new NpgsqlConnection(_connectionString);
+            await conn.OpenAsync();
+            Console.WriteLine("? Database connection established");
+            
+            // Create questions table if not exists
+            await using var cmd = new NpgsqlCommand(@"
+                CREATE TABLE IF NOT EXISTS questions (
+                    id SERIAL PRIMARY KEY,
+                    text TEXT NOT NULL,
+                    answer TEXT NOT NULL,
+                    author TEXT,
+                    created_at TIMESTAMP NOT NULL DEFAULT NOW(),
+                    played_at TIMESTAMP
+                )", conn);
+            
+            await cmd.ExecuteNonQueryAsync();
+            Console.WriteLine("? Questions table ready");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"? Database initialization error: {ex.Message}");
+            throw;
+        }
     }
 }
+

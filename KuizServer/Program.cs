@@ -33,14 +33,25 @@ builder.Services.AddSingleton<QuestionService>();
 
 var app = builder.Build();
 
-// Initialize database
-using (var scope = app.Services.CreateScope())
+// Initialize database (non-blocking, with error handling)
+_ = Task.Run(async () =>
 {
-    var questionService = scope.ServiceProvider.GetRequiredService<QuestionService>();
-    await questionService.InitializeDatabaseAsync();
-}
+    try
+    {
+        using var scope = app.Services.CreateScope();
+        var questionService = scope.ServiceProvider.GetRequiredService<QuestionService>();
+        await questionService.InitializeDatabaseAsync();
+        Console.WriteLine("? Database initialized successfully");
+    }
+    catch (Exception ex)
+    {
+        Console.WriteLine($"?? Database initialization failed: {ex.Message}");
+        Console.WriteLine("Application will continue without database");
+    }
+});
 
 // Configure the HTTP request pipeline
+
 
 if (app.Environment.IsDevelopment())
 {
