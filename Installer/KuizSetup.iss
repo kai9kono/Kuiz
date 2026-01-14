@@ -19,14 +19,15 @@ AppUpdatesURL={#MyAppURL}/releases
 DefaultDirName={autopf}\{#MyAppName}
 DefaultGroupName={#MyAppName}
 DisableProgramGroupPage=yes
-LicenseFile=LICENSE
-OutputDir=installer
+LicenseFile=..\LICENSE
+OutputDir=..\installer
 OutputBaseFilename=KuizSetup-{#MyAppVersion}
 Compression=lzma2/max
 SolidCompression=yes
 WizardStyle=modern
-SetupIconFile=Resources\icon\icon.ico
+SetupIconFile=..\Resources\icon\icon.ico
 UninstallDisplayIcon={app}\{#MyAppExeName}
+
 
 ; 最小Windowsバージョン
 MinVersion=10.0.19041
@@ -48,17 +49,18 @@ Name: "quicklaunchicon"; Description: "クイック起動にショートカットを作成(&Q)"; 
 
 [Files]
 ; アプリケーション本体
-Source: "bin\Release\net10.0-windows\publish\win-x64\{#MyAppExeName}"; DestDir: "{app}"; Flags: ignoreversion
-Source: "bin\Release\net10.0-windows\publish\win-x64\*.dll"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs
-Source: "bin\Release\net10.0-windows\publish\win-x64\*.json"; DestDir: "{app}"; Flags: ignoreversion
+Source: "..\bin\Release\net10.0-windows\publish\win-x64\{#MyAppExeName}"; DestDir: "{app}"; Flags: ignoreversion
+Source: "..\bin\Release\net10.0-windows\publish\win-x64\*.dll"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs
+Source: "..\bin\Release\net10.0-windows\publish\win-x64\*.json"; DestDir: "{app}"; Flags: ignoreversion
 
 ; リソースファイル
-Source: "bin\Release\net10.0-windows\publish\win-x64\Resources\*"; DestDir: "{app}\Resources"; Flags: ignoreversion recursesubdirs
+Source: "..\bin\Release\net10.0-windows\publish\win-x64\Resources\*"; DestDir: "{app}\Resources"; Flags: ignoreversion recursesubdirs
 
 ; ドキュメント
-Source: "README.md"; DestDir: "{app}"; Flags: ignoreversion isreadme
-Source: "LICENSE"; DestDir: "{app}"; Flags: ignoreversion
+Source: "..\README.md"; DestDir: "{app}"; Flags: ignoreversion isreadme
+Source: "..\LICENSE"; DestDir: "{app}"; Flags: ignoreversion
 Source: "インストール手順.txt"; DestDir: "{app}"; Flags: ignoreversion
+
 
 [Icons]
 Name: "{group}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"
