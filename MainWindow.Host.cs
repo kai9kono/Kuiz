@@ -283,6 +283,13 @@ namespace Kuiz
             {
                 try
                 {
+                    // Include questions for smooth client-side display
+                    var questionsData = _gameState.PlayQueue.Select(q => new
+                    {
+                        Text = q.Text,
+                        Answer = q.Answer
+                    }).ToList();
+
                     var gameSettings = new
                     {
                         PointsToWin = pointsToWin,
@@ -290,11 +297,12 @@ namespace Kuiz
                         NumQuestions = numQuestions,
                         Players = _gameState.LobbyPlayers.ToList(),
                         Scores = _gameState.Scores.ToDictionary(kv => kv.Key, kv => kv.Value),
-                        Mistakes = _gameState.Mistakes.ToDictionary(kv => kv.Key, kv => kv.Value)
+                        Mistakes = _gameState.Mistakes.ToDictionary(kv => kv.Key, kv => kv.Value),
+                        Questions = questionsData
                     };
                     
                     await _hostService.NotifyGameStartAsync(gameSettings);
-                    Logger.LogInfo("📢 Game start notification sent to all clients with player list");
+                    Logger.LogInfo("📢 Game start notification sent to all clients with player list and questions");
                 }
                 catch (Exception ex)
                 {

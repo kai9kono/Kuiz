@@ -18,6 +18,11 @@ namespace Kuiz
         private int _lastClientSessionId = -1;
         private int _lastClientQuestionIndex = -1;
         private CancellationTokenSource? _pollStateCts;
+        
+        // Client-side question management for smooth display
+        private readonly List<ClientQuestion> _clientQuestions = new();
+        private int _clientQuestionIndex = -1;
+        private CancellationTokenSource? _clientRevealCts;
 
         private void BtnTitleJoin_Click(object sender, RoutedEventArgs e) => ShowPanel(JoinPanel);
         private void BtnJoinBack_Click(object sender, RoutedEventArgs e) => ShowPanel(TitlePanel);
@@ -97,8 +102,6 @@ namespace Kuiz
             {
                 Dispatcher.Invoke(() =>
                 {
-                    Logger.LogInfo("📥 Game state updated via SignalR");
-                    
                     try
                     {
                         // Parse game state from host
@@ -107,16 +110,7 @@ namespace Kuiz
                         
                         if (gameState != null)
                         {
-                            // Update revealed text
-                            if (gameState.ContainsKey("revealedText"))
-                            {
-                                var revealedText = gameState["revealedText"].GetString() ?? "";
-                                _gameState.RevealedText = revealedText;
-                                if (!_isAnswerDialogOpen)
-                                {
-                                    TxtGameQuestion.Text = revealedText;
-                                }
-                            }
+                            // NOTE: Don't update revealed text - client displays locally for smooth animation
                             
                             // Update scores
                             if (gameState.ContainsKey("scores"))
@@ -272,20 +266,22 @@ namespace Kuiz
                         TxtGameStatus.Text = "回答入力中...";
                         UpdateGameUi();
                         
+                        // Cancel reveal while answering
+                        _clientRevealCts?.Cancel();
+                        
                         var answer = await ShowClientAnswerInputAsync(10);
+                        
+                        // Send answer (empty string for timeout)
+                        var answerToSend = answer ?? "";
+                        await _signalRClient.SendAnswerAsync(answerToSend);
+                        Logger.LogInfo($"📤 Answer sent via SignalR: '{answerToSend}'");
                         
                         if (!string.IsNullOrEmpty(answer))
                         {
-                            // Send answer via SignalR
-                            await _signalRClient.SendAnswerAsync(answer);
-                            Logger.LogInfo($"📤 Answer sent via SignalR: {answer}");
                             TxtGameStatus.Text = "回答送信済み - 判定待ち...";
                         }
                         else
                         {
-                            // Timeout - notify host
-                            Logger.LogInfo("⏱️ Answer timeout - sending empty answer");
-                            await _signalRClient.SendAnswerAsync("");
                             TxtGameStatus.Text = "時間切れ";
                         }
                     }
@@ -343,6 +339,18 @@ namespace Kuiz
                                 _gameState.Mistakes[kvp.Key] = kvp.Value;
                             }
                             
+                            // Initialize questions for local display
+                            _clientQuestions.Clear();
+                            if (gameSettings.Questions != null)
+                            {
+                                foreach (var q in gameSettings.Questions)
+                                {
+                                    _clientQuestions.Add(new ClientQuestion { Text = q.Text, Answer = q.Answer });
+                                }
+                                Logger.LogInfo($"📋 Received {_clientQuestions.Count} questions for local display");
+                            }
+                            _clientQuestionIndex = -1;
+                            
                             _gameState.InitializeScores();
                             
                             Logger.LogInfo($"📋 Game initialized with {gameSettings.Players.Count} players");
@@ -352,6 +360,9 @@ namespace Kuiz
                     {
                         Logger.LogError($"Failed to parse game settings: {ex.Message}");
                     }
+                    
+                    // Reset game state
+                    _gameEnded = false;
                     
                     // Show countdown
                     await ShowGameStartCountdownAsync();
@@ -366,17 +377,21 @@ namespace Kuiz
             {
                 Dispatcher.Invoke(() =>
                 {
-                    Logger.LogInfo("🏁 Game ended via SignalR");
+                    Logger.LogInfo("🏁 Game ended via SignalR - processing results");
                     
                     try
                     {
                         // Parse results
                         var resultsJson = System.Text.Json.JsonSerializer.Serialize(results);
+                        Logger.LogInfo($"📋 Game results JSON: {resultsJson}");
+                        
                         var gameResults = System.Text.Json.JsonSerializer.Deserialize<Dictionary<string, JsonElement>>(resultsJson);
+                        
+                        var winner = "No winner";
                         
                         if (gameResults != null)
                         {
-                            // Update final scores
+                            // Try both "Scores" and "scores" (case sensitivity)
                             if (gameResults.ContainsKey("Scores"))
                             {
                                 var scoresElement = gameResults["Scores"];
@@ -386,22 +401,44 @@ namespace Kuiz
                                     _gameState.Scores[prop.Name] = prop.Value.GetInt32();
                                 }
                             }
+                            else if (gameResults.ContainsKey("scores"))
+                            {
+                                var scoresElement = gameResults["scores"];
+                                _gameState.Scores.Clear();
+                                foreach (var prop in scoresElement.EnumerateObject())
+                                {
+                                    _gameState.Scores[prop.Name] = prop.Value.GetInt32();
+                                }
+                            }
                             
-                            // Get winner
-                            var winner = "No winner";
+                            // Get winner (try both cases)
                             if (gameResults.ContainsKey("Winner"))
                             {
                                 winner = gameResults["Winner"].GetString() ?? "No winner";
                             }
-                            
-                            // Show result screen
-                            _gameEnded = true;
-                            ShowResult(winner);
+                            else if (gameResults.ContainsKey("winner"))
+                            {
+                                winner = gameResults["winner"].GetString() ?? "No winner";
+                            }
                         }
+                        
+                        Logger.LogInfo($"🏆 Winner: {winner}");
+                        
+                        // Cancel any ongoing reveal
+                        _clientRevealCts?.Cancel();
+                        
+                        // Show result screen
+                        _gameEnded = true;
+                        ShowResult(winner);
                     }
                     catch (Exception ex)
                     {
                         Logger.LogError($"Failed to parse game results: {ex.Message}");
+                        Logger.LogError(ex);
+                        
+                        // Show result screen anyway
+                        _gameEnded = true;
+                        ShowResult("Game Over");
                     }
                 });
             };
@@ -440,6 +477,18 @@ namespace Kuiz
                     ResultOverlay.Visibility = Visibility.Collapsed;
                     ResultOverlay.IsHitTestVisible = false;
                     
+                    // Resume local reveal if not correct (game continues)
+                    if (!isCorrect && _clientQuestionIndex >= 0 && _clientQuestionIndex < _clientQuestions.Count)
+                    {
+                        // Resume from current position
+                        var currentQuestion = _clientQuestions[_clientQuestionIndex].Text;
+                        var currentPos = _gameState.RevealedText.Length;
+                        if (currentPos < currentQuestion.Length)
+                        {
+                            StartClientRevealLoopFromPosition(currentQuestion, currentPos);
+                        }
+                    }
+                    
                     UpdateGameUi();
                 });
             };
@@ -447,7 +496,7 @@ namespace Kuiz
             // 次の問題へ遷移
             _signalRClient.OnNextQuestion += () =>
             {
-                Dispatcher.Invoke(() =>
+                Dispatcher.Invoke(async () =>
                 {
                     Logger.LogInfo("📋 Next question notification received");
                     
@@ -457,6 +506,18 @@ namespace Kuiz
                     _gameState.PausedForBuzz = false;
                     TxtAnsweringBadge.Visibility = Visibility.Collapsed;
                     TxtGameStatus.Text = string.Empty;
+                    
+                    // Move to next question locally
+                    _clientQuestionIndex++;
+                    
+                    if (_clientQuestionIndex < _clientQuestions.Count)
+                    {
+                        // Show question number banner
+                        await ShowClientPreDisplayBannerAsync(_clientQuestionIndex + 1);
+                        
+                        // Start local reveal
+                        StartClientRevealLoop(_clientQuestions[_clientQuestionIndex].Text);
+                    }
                     
                     UpdateGameUi();
                 });
@@ -564,23 +625,51 @@ namespace Kuiz
         // Helper class for lobby state deserialization
         private class LobbyState
         {
+            [System.Text.Json.Serialization.JsonPropertyName("exists")]
             public bool Exists { get; set; }
+            [System.Text.Json.Serialization.JsonPropertyName("code")]
             public string Code { get; set; } = string.Empty;
+            [System.Text.Json.Serialization.JsonPropertyName("host")]
             public string Host { get; set; } = string.Empty;
+            [System.Text.Json.Serialization.JsonPropertyName("players")]
             public List<string> Players { get; set; } = new();
+            [System.Text.Json.Serialization.JsonPropertyName("playerCount")]
             public int PlayerCount { get; set; }
+            [System.Text.Json.Serialization.JsonPropertyName("maxPlayers")]
             public int MaxPlayers { get; set; }
         }
 
         // Helper class for game settings deserialization
         private class GameSettings
         {
+            [System.Text.Json.Serialization.JsonPropertyName("PointsToWin")]
             public int PointsToWin { get; set; }
+            [System.Text.Json.Serialization.JsonPropertyName("MaxMistakes")]
             public int MaxMistakes { get; set; }
+            [System.Text.Json.Serialization.JsonPropertyName("NumQuestions")]
             public int NumQuestions { get; set; }
+            [System.Text.Json.Serialization.JsonPropertyName("Players")]
             public List<string> Players { get; set; } = new();
+            [System.Text.Json.Serialization.JsonPropertyName("Scores")]
             public Dictionary<string, int> Scores { get; set; } = new();
+            [System.Text.Json.Serialization.JsonPropertyName("Mistakes")]
             public Dictionary<string, int> Mistakes { get; set; } = new();
+            [System.Text.Json.Serialization.JsonPropertyName("Questions")]
+            public List<QuestionData> Questions { get; set; } = new();
+        }
+
+        private class QuestionData
+        {
+            [System.Text.Json.Serialization.JsonPropertyName("Text")]
+            public string Text { get; set; } = string.Empty;
+            [System.Text.Json.Serialization.JsonPropertyName("Answer")]
+            public string Answer { get; set; } = string.Empty;
+        }
+
+        private class ClientQuestion
+        {
+            public string Text { get; set; } = string.Empty;
+            public string Answer { get; set; } = string.Empty;
         }
 
         // Legacy HTTP polling - replaced by SignalR
@@ -770,6 +859,85 @@ namespace Kuiz
                     TxtOverlayAnswer.Text = string.Empty;
                 });
             }
+        }
+
+        /// <summary>
+        /// クライアント用の問題番号表示
+        /// </summary>
+        private async Task ShowClientPreDisplayBannerAsync(int questionNumber)
+        {
+            Dispatcher.Invoke(() =>
+            {
+                TxtGameQuestion.Text = $"第{questionNumber}問";
+                TxtGameQuestion.TextAlignment = System.Windows.TextAlignment.Center;
+                TxtGameQuestion.FontWeight = FontWeights.Bold;
+                if (BtnGameBuzz != null) BtnGameBuzz.IsEnabled = false;
+                _soundService.PlayQuestion();
+            });
+
+            await Task.Delay(2000);
+
+            Dispatcher.Invoke(() =>
+            {
+                TxtGameQuestion.Text = string.Empty;
+                TxtGameQuestion.TextAlignment = System.Windows.TextAlignment.Left;
+                TxtGameQuestion.FontWeight = FontWeights.Normal;
+                if (BtnGameBuzz != null) BtnGameBuzz.IsEnabled = true;
+                UpdateBuzzButtonState();
+            });
+        }
+
+        /// <summary>
+        /// クライアント用の問題テキスト表示（スムーズに1文字ずつ）
+        /// </summary>
+        private void StartClientRevealLoop(string questionText)
+        {
+            StartClientRevealLoopFromPosition(questionText, 0);
+        }
+
+        /// <summary>
+        /// クライアント用の問題テキスト表示（指定位置から再開）
+        /// </summary>
+        private void StartClientRevealLoopFromPosition(string questionText, int startIndex)
+        {
+            _clientRevealCts?.Cancel();
+            _clientRevealCts = new CancellationTokenSource();
+            var ct = _clientRevealCts.Token;
+
+            _ = Task.Run(async () =>
+            {
+                try
+                {
+                    var revealIndex = startIndex;
+                    var revealIntervalMs = 60;
+
+                    while (!ct.IsCancellationRequested && revealIndex < questionText.Length)
+                    {
+                        // Pause while someone is answering
+                        if (_gameState.PausedForBuzz)
+                        {
+                            await Task.Delay(100, ct);
+                            continue;
+                        }
+
+                        revealIndex++;
+                        var revealedText = questionText.Substring(0, revealIndex);
+                        _gameState.RevealedText = revealedText;
+
+                        Dispatcher.Invoke(() =>
+                        {
+                            if (!_isAnswerDialogOpen)
+                            {
+                                TxtGameQuestion.Text = revealedText;
+                            }
+                        });
+
+                        await Task.Delay(revealIntervalMs, ct);
+                    }
+                }
+                catch (OperationCanceledException) { }
+                catch (Exception ex) { Logger.LogError(ex); }
+            });
         }
     }
 }
