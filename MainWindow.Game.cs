@@ -121,9 +121,10 @@ namespace Kuiz
                 _gameState.PausedForBuzz = false;
                 _gameState.BuzzOrder.Clear();
                 
-                // Broadcast updated state
+                // Notify clients about timeout/incorrect
                 if (_hostService.IsRunning)
                 {
+                    await _hostService.NotifyAnswerResultAsync(name, false);
                     await BroadcastGameStateAsync();
                 }
             }
@@ -372,6 +373,12 @@ namespace Kuiz
 
         private void TxtOverlayAnswer_KeyDown(object sender, KeyEventArgs e)
         {
+            // クライアントの場合はスキップ（ShowClientAnswerInputAsyncで別途ハンドル）
+            if (!_isHost)
+            {
+                return;
+            }
+            
             if (e.Key == Key.Enter)
             {
                 e.Handled = true;
@@ -466,8 +473,9 @@ namespace Kuiz
                 // Record question to history
                 _ = RecordQuestionPlayedAsync(question);
 
-                // Notify clients about next question and broadcast game state
-                if (_isHost && _hostService.IsRunning)
+                // Notify clients about next question (skip first question - clients start it in OnGameStarting)
+                // QueuePosition is 0-based, so QueuePosition > 0 means this is the 2nd question or later
+                if (_isHost && _hostService.IsRunning && _gameState.QueuePosition > 0)
                 {
                     await _hostService.NotifyNextQuestionAsync();
                     await BroadcastGameStateAsync();

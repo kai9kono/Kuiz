@@ -23,6 +23,9 @@ namespace Kuiz
         private readonly List<ClientQuestion> _clientQuestions = new();
         private int _clientQuestionIndex = -1;
         private CancellationTokenSource? _clientRevealCts;
+        
+        // Prevent duplicate answer input dialogs
+        private bool _isClientAnswering = false;
 
         private void BtnTitleJoin_Click(object sender, RoutedEventArgs e) => ShowPanel(JoinPanel);
         private void BtnJoinBack_Click(object sender, RoutedEventArgs e) => ShowPanel(TitlePanel);
@@ -246,6 +249,15 @@ namespace Kuiz
                 {
                     Logger.LogInfo($"🔔 Player buzzed: {playerName}");
                     
+                    var myName = _profileService.PlayerName ?? TxtJoinPlayerName.Text.Trim();
+                    
+                    // If it's me who buzzed and I'm already answering, ignore duplicate event
+                    if (playerName == myName && _isClientAnswering)
+                    {
+                        Logger.LogInfo($"   Ignoring duplicate buzz event for myself");
+                        return;
+                    }
+                    
                     // Update buzz state
                     _gameState.PausedForBuzz = true;
                     if (!_gameState.BuzzOrder.Contains(playerName))
@@ -254,8 +266,6 @@ namespace Kuiz
                         _gameState.BuzzOrder.Add(playerName);
                     }
                     
-                    var myName = _profileService.PlayerName ?? TxtJoinPlayerName.Text.Trim();
-                    
                     // Show answering badge for everyone
                     TxtAnsweringBadge.Text = $"回答中: {playerName}";
                     TxtAnsweringBadge.Visibility = Visibility.Visible;
@@ -263,26 +273,34 @@ namespace Kuiz
                     // If it's me who buzzed, show answer input
                     if (playerName == myName)
                     {
+                        _isClientAnswering = true;
                         TxtGameStatus.Text = "回答入力中...";
                         UpdateGameUi();
                         
                         // Cancel reveal while answering
                         _clientRevealCts?.Cancel();
                         
-                        var answer = await ShowClientAnswerInputAsync(10);
-                        
-                        // Send answer (empty string for timeout)
-                        var answerToSend = answer ?? "";
-                        await _signalRClient.SendAnswerAsync(answerToSend);
-                        Logger.LogInfo($"📤 Answer sent via SignalR: '{answerToSend}'");
-                        
-                        if (!string.IsNullOrEmpty(answer))
+                        try
                         {
-                            TxtGameStatus.Text = "回答送信済み - 判定待ち...";
+                            var answer = await ShowClientAnswerInputAsync(10);
+                            
+                            // Send answer (empty string for timeout)
+                            var answerToSend = answer ?? "";
+                            await _signalRClient.SendAnswerAsync(answerToSend);
+                            Logger.LogInfo($"📤 Answer sent via SignalR: '{answerToSend}'");
+                            
+                            if (!string.IsNullOrEmpty(answer))
+                            {
+                                TxtGameStatus.Text = "回答送信済み - 判定待ち...";
+                            }
+                            else
+                            {
+                                TxtGameStatus.Text = "時間切れ";
+                            }
                         }
-                        else
+                        finally
                         {
-                            TxtGameStatus.Text = "時間切れ";
+                            _isClientAnswering = false;
                         }
                     }
                     else
@@ -370,6 +388,14 @@ namespace Kuiz
                     // Switch to game panel
                     ShowPanel(GamePanel);
                     UpdateGameUi();
+                    
+                    // Start the first question locally (OnNextQuestion handles subsequent questions)
+                    if (_clientQuestions.Count > 0)
+                    {
+                        _clientQuestionIndex = 0;
+                        await ShowClientPreDisplayBannerAsync(1);
+                        StartClientRevealLoop(_clientQuestions[0].Text);
+                    }
                 });
             };
 

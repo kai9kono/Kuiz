@@ -145,8 +145,9 @@ namespace Kuiz
                     
                     UpdateGameUi();
                     
-                    // Notify all clients (including buzzer) via SignalR
-                    await _hostService.NotifyPlayerBuzzedAsync(playerName);
+                    // NOTE: サーバーが既にPlayerBuzzedをグループ全体に送信済みなので、
+                    // ここで再度NotifyPlayerBuzzedAsyncを呼ぶと二重送信になる
+                    // クライアントのバズはサーバー経由で直接通知されるので、ここでは通知しない
                     
                     // Update and broadcast game state
                     await BroadcastGameStateAsync();
