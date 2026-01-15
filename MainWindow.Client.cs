@@ -97,7 +97,7 @@ namespace Kuiz
             {
                 Dispatcher.Invoke(() =>
                 {
-                    Logger.LogInfo("Game state updated via SignalR");
+                    Logger.LogInfo("📥 Game state updated via SignalR");
                     
                     try
                     {
@@ -112,13 +112,17 @@ namespace Kuiz
                             {
                                 var revealedText = gameState["revealedText"].GetString() ?? "";
                                 _gameState.RevealedText = revealedText;
-                                TxtGameQuestion.Text = revealedText;
+                                if (!_isAnswerDialogOpen)
+                                {
+                                    TxtGameQuestion.Text = revealedText;
+                                }
                             }
                             
                             // Update scores
                             if (gameState.ContainsKey("scores"))
                             {
                                 var scoresElement = gameState["scores"];
+                                _gameState.Scores.Clear();
                                 foreach (var prop in scoresElement.EnumerateObject())
                                 {
                                     var playerName = prop.Name;
@@ -131,11 +135,76 @@ namespace Kuiz
                             if (gameState.ContainsKey("mistakes"))
                             {
                                 var mistakesElement = gameState["mistakes"];
+                                _gameState.Mistakes.Clear();
                                 foreach (var prop in mistakesElement.EnumerateObject())
                                 {
                                     var playerName = prop.Name;
                                     var mistakes = prop.Value.GetInt32();
                                     _gameState.Mistakes[playerName] = mistakes;
+                                }
+                            }
+                            
+                            // Update buzz order
+                            if (gameState.ContainsKey("buzzOrder"))
+                            {
+                                var buzzOrderElement = gameState["buzzOrder"];
+                                _gameState.BuzzOrder.Clear();
+                                foreach (var item in buzzOrderElement.EnumerateArray())
+                                {
+                                    var playerName = item.GetString();
+                                    if (!string.IsNullOrEmpty(playerName))
+                                    {
+                                        _gameState.BuzzOrder.Add(playerName);
+                                    }
+                                }
+                                
+                                // Show answering badge if someone is answering
+                                if (_gameState.BuzzOrder.Count > 0)
+                                {
+                                    var answerer = _gameState.BuzzOrder[0];
+                                    TxtAnsweringBadge.Text = $"回答中: {answerer}";
+                                    TxtAnsweringBadge.Visibility = Visibility.Visible;
+                                    TxtGameStatus.Text = $"{answerer} が回答中...";
+                                }
+                                else
+                                {
+                                    TxtAnsweringBadge.Visibility = Visibility.Collapsed;
+                                }
+                            }
+                            
+                            // Update paused state
+                            if (gameState.ContainsKey("pausedForBuzz"))
+                            {
+                                _gameState.PausedForBuzz = gameState["pausedForBuzz"].GetBoolean();
+                            }
+                            
+                            // Update attempted list
+                            if (gameState.ContainsKey("attemptedThisQuestion"))
+                            {
+                                var attemptedElement = gameState["attemptedThisQuestion"];
+                                _gameState.AttemptedThisQuestion.Clear();
+                                foreach (var item in attemptedElement.EnumerateArray())
+                                {
+                                    var playerName = item.GetString();
+                                    if (!string.IsNullOrEmpty(playerName))
+                                    {
+                                        _gameState.AttemptedThisQuestion.Add(playerName);
+                                    }
+                                }
+                            }
+                            
+                            // Update players list
+                            if (gameState.ContainsKey("players"))
+                            {
+                                var playersElement = gameState["players"];
+                                _gameState.LobbyPlayers.Clear();
+                                foreach (var item in playersElement.EnumerateArray())
+                                {
+                                    var playerName = item.GetString();
+                                    if (!string.IsNullOrEmpty(playerName))
+                                    {
+                                        _gameState.AddPlayer(playerName);
+                                    }
                                 }
                             }
                             
@@ -179,12 +248,59 @@ namespace Kuiz
 
             _signalRClient.OnPlayerBuzzed += (playerName) =>
             {
-                Dispatcher.Invoke(() =>
+                Dispatcher.Invoke(async () =>
                 {
                     Logger.LogInfo($"🔔 Player buzzed: {playerName}");
                     
-                    // Handle buzz in game (simplified - just log for now)
-                    // Full buzz handling is done on host side
+                    // Update buzz state
+                    _gameState.PausedForBuzz = true;
+                    if (!_gameState.BuzzOrder.Contains(playerName))
+                    {
+                        _gameState.BuzzOrder.Clear();
+                        _gameState.BuzzOrder.Add(playerName);
+                    }
+                    
+                    var myName = _profileService.PlayerName ?? TxtJoinPlayerName.Text.Trim();
+                    
+                    // Show answering badge for everyone
+                    TxtAnsweringBadge.Text = $"回答中: {playerName}";
+                    TxtAnsweringBadge.Visibility = Visibility.Visible;
+                    
+                    // If it's me who buzzed, show answer input
+                    if (playerName == myName)
+                    {
+                        TxtGameStatus.Text = "回答入力中...";
+                        UpdateGameUi();
+                        
+                        var answer = await ShowClientAnswerInputAsync(10);
+                        
+                        if (!string.IsNullOrEmpty(answer))
+                        {
+                            // Send answer via SignalR
+                            await _signalRClient.SendAnswerAsync(answer);
+                            Logger.LogInfo($"📤 Answer sent via SignalR: {answer}");
+                            TxtGameStatus.Text = "回答送信済み - 判定待ち...";
+                        }
+                        else
+                        {
+                            // Timeout - notify host
+                            Logger.LogInfo("⏱️ Answer timeout - sending empty answer");
+                            await _signalRClient.SendAnswerAsync("");
+                            TxtGameStatus.Text = "時間切れ";
+                        }
+                    }
+                    else
+                    {
+                        // Show that someone else is answering
+                        TxtGameStatus.Text = $"{playerName} が回答中...";
+                        
+                        // Disable buzz button while someone is answering
+                        if (BtnGameBuzz != null)
+                        {
+                            BtnGameBuzz.IsEnabled = false;
+                        }
+                        UpdateGameUi();
+                    }
                 });
             };
 
@@ -250,8 +366,99 @@ namespace Kuiz
             {
                 Dispatcher.Invoke(() =>
                 {
-                    Logger.LogInfo("🏁 Game ended");
-                    // Handle game end
+                    Logger.LogInfo("🏁 Game ended via SignalR");
+                    
+                    try
+                    {
+                        // Parse results
+                        var resultsJson = System.Text.Json.JsonSerializer.Serialize(results);
+                        var gameResults = System.Text.Json.JsonSerializer.Deserialize<Dictionary<string, JsonElement>>(resultsJson);
+                        
+                        if (gameResults != null)
+                        {
+                            // Update final scores
+                            if (gameResults.ContainsKey("Scores"))
+                            {
+                                var scoresElement = gameResults["Scores"];
+                                _gameState.Scores.Clear();
+                                foreach (var prop in scoresElement.EnumerateObject())
+                                {
+                                    _gameState.Scores[prop.Name] = prop.Value.GetInt32();
+                                }
+                            }
+                            
+                            // Get winner
+                            var winner = "No winner";
+                            if (gameResults.ContainsKey("Winner"))
+                            {
+                                winner = gameResults["Winner"].GetString() ?? "No winner";
+                            }
+                            
+                            // Show result screen
+                            _gameEnded = true;
+                            ShowResult(winner);
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        Logger.LogError($"Failed to parse game results: {ex.Message}");
+                    }
+                });
+            };
+
+            // 回答結果を受信
+            _signalRClient.OnAnswerResult += (playerName, isCorrect) =>
+            {
+                Dispatcher.Invoke(async () =>
+                {
+                    Logger.LogInfo($"📋 Answer result: {playerName} - {(isCorrect ? "正解" : "不正解")}");
+                    
+                    // Hide answering badge
+                    TxtAnsweringBadge.Visibility = Visibility.Collapsed;
+                    _gameState.BuzzOrder.Clear();
+                    _gameState.PausedForBuzz = false;
+                    
+                    if (isCorrect)
+                    {
+                        _soundService.PlayCorrect();
+                        TxtOverlayStatus.Text = "正解！";
+                        TxtOverlayDetail.Text = $"{playerName}";
+                    }
+                    else
+                    {
+                        _soundService.PlayIncorrect();
+                        TxtOverlayStatus.Text = "不正解...";
+                        TxtOverlayDetail.Text = $"{playerName}";
+                    }
+                    
+                    ResultOverlay.Visibility = Visibility.Visible;
+                    ResultOverlay.IsHitTestVisible = true;
+                    AnimateOverlayOpen(ResultOverlayBorder);
+                    
+                    await Task.Delay(isCorrect ? 1000 : 1500);
+                    
+                    ResultOverlay.Visibility = Visibility.Collapsed;
+                    ResultOverlay.IsHitTestVisible = false;
+                    
+                    UpdateGameUi();
+                });
+            };
+
+            // 次の問題へ遷移
+            _signalRClient.OnNextQuestion += () =>
+            {
+                Dispatcher.Invoke(() =>
+                {
+                    Logger.LogInfo("📋 Next question notification received");
+                    
+                    // Reset question state for client
+                    _gameState.AttemptedThisQuestion.Clear();
+                    _gameState.BuzzOrder.Clear();
+                    _gameState.PausedForBuzz = false;
+                    TxtAnsweringBadge.Visibility = Visibility.Collapsed;
+                    TxtGameStatus.Text = string.Empty;
+                    
+                    UpdateGameUi();
                 });
             };
         }
@@ -477,5 +684,92 @@ namespace Kuiz
             UpdateBuzzButtonState();
         }
         */
+
+        /// <summary>
+        /// クライアント用のシンプルな回答入力（AnswerOverlayを使用）
+        /// </summary>
+        private async Task<string?> ShowClientAnswerInputAsync(int secondsTimeout)
+        {
+            var tcs = new TaskCompletionSource<string?>();
+            CancellationTokenSource? cts = null;
+
+            try
+            {
+                cts = new CancellationTokenSource();
+                var remainingSeconds = secondsTimeout;
+
+                Dispatcher.Invoke(() =>
+                {
+                    TxtOverlayTitle.Text = "回答入力";
+                    TxtOverlayInfo.Visibility = Visibility.Collapsed;
+                    TxtOverlayAnswer.Text = string.Empty;
+                    TxtOverlayAnswer.Visibility = Visibility.Visible;
+                    TxtOverlayTimer.Text = $"{remainingSeconds}s";
+                    AnswerOverlay.Visibility = Visibility.Visible;
+                    AnswerOverlay.IsHitTestVisible = true;
+                    AnimateOverlayOpen(AnswerOverlayBorder);
+                    TxtOverlayAnswer.Focus();
+                });
+
+                // Enterキーで回答を送信
+                void OnKeyDown(object sender, System.Windows.Input.KeyEventArgs e)
+                {
+                    if (e.Key == System.Windows.Input.Key.Enter)
+                    {
+                        e.Handled = true;
+                        var text = TxtOverlayAnswer.Text?.Trim();
+                        tcs.TrySetResult(string.IsNullOrWhiteSpace(text) ? null : text);
+                        cts?.Cancel();
+                    }
+                    else if (e.Key == System.Windows.Input.Key.Escape)
+                    {
+                        e.Handled = true;
+                        tcs.TrySetResult(null);
+                        cts?.Cancel();
+                    }
+                }
+
+                Dispatcher.Invoke(() => TxtOverlayAnswer.KeyDown += OnKeyDown);
+
+                // カウントダウン
+                _ = Task.Run(async () =>
+                {
+                    try
+                    {
+                        while (remainingSeconds > 0 && !cts.Token.IsCancellationRequested)
+                        {
+                            await Task.Delay(1000, cts.Token);
+                            remainingSeconds--;
+                            Dispatcher.Invoke(() => TxtOverlayTimer.Text = $"{remainingSeconds}s");
+                        }
+
+                        if (!cts.Token.IsCancellationRequested)
+                        {
+                            tcs.TrySetResult(null);
+                        }
+                    }
+                    catch (OperationCanceledException) { }
+                });
+
+                var result = await tcs.Task;
+
+                Dispatcher.Invoke(() => TxtOverlayAnswer.KeyDown -= OnKeyDown);
+
+                return result;
+            }
+            finally
+            {
+                cts?.Cancel();
+                cts?.Dispose();
+
+                Dispatcher.Invoke(() =>
+                {
+                    AnswerOverlay.Visibility = Visibility.Collapsed;
+                    AnswerOverlay.IsHitTestVisible = false;
+                    TxtOverlayTimer.Text = string.Empty;
+                    TxtOverlayAnswer.Text = string.Empty;
+                });
+            }
+        }
     }
 }

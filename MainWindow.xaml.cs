@@ -118,10 +118,38 @@ namespace Kuiz
             
             _hostService.OnBuzzReceived = async (playerName) =>
             {
-                await Dispatcher.InvokeAsync(() =>
+                await Dispatcher.InvokeAsync(async () =>
                 {
                     Logger.LogInfo($"🔔 Buzz received from: {playerName}");
-                    // Buzz handling logic here
+                    
+                    // Check if can buzz
+                    if (_gameState.PausedForBuzz || _gameState.BuzzOrder.Count > 0)
+                    {
+                        Logger.LogInfo($"   Buzz rejected: Already answering");
+                        return;
+                    }
+                    
+                    if (_gameState.AttemptedThisQuestion.Contains(playerName))
+                    {
+                        Logger.LogInfo($"   Buzz rejected: Already attempted");
+                        return;
+                    }
+                    
+                    // Process buzz
+                    _gameState.ProcessBuzz(playerName);
+                    
+                    // Show answering badge on host
+                    TxtAnsweringBadge.Text = $"回答中: {playerName}";
+                    TxtAnsweringBadge.Visibility = Visibility.Visible;
+                    TxtGameStatus.Text = $"{playerName} が回答中...";
+                    
+                    UpdateGameUi();
+                    
+                    // Notify all clients (including buzzer) via SignalR
+                    await _hostService.NotifyPlayerBuzzedAsync(playerName);
+                    
+                    // Update and broadcast game state
+                    await BroadcastGameStateAsync();
                 });
                 
                 return true;
@@ -129,10 +157,57 @@ namespace Kuiz
             
             _hostService.OnAnswerReceived = async (playerName, answer) =>
             {
-                await Dispatcher.InvokeAsync(() =>
+                await Dispatcher.InvokeAsync(async () =>
                 {
                     Logger.LogInfo($"💬 Answer received from {playerName}: {answer}");
-                    // Answer handling logic here
+                    
+                    // Hide answering badge
+                    TxtAnsweringBadge.Visibility = Visibility.Collapsed;
+                    
+                    // Check if answer is empty (timeout)
+                    if (string.IsNullOrWhiteSpace(answer))
+                    {
+                        Logger.LogInfo($"⏱️ Empty answer from {playerName} - treating as timeout");
+                        
+                        // Count as mistake
+                        if (!_gameState.Mistakes.ContainsKey(playerName))
+                        {
+                            _gameState.Mistakes[playerName] = 0;
+                        }
+                        _gameState.Mistakes[playerName]++;
+                        _gameState.AttemptedThisQuestion.Add(playerName);
+                        
+                        // Show timeout result
+                        _soundService.PlayIncorrect();
+                        TxtOverlayStatus.Text = "時間切れ";
+                        TxtOverlayDetail.Text = playerName;
+                        ResultOverlay.Visibility = Visibility.Visible;
+                        ResultOverlay.IsHitTestVisible = true;
+                        AnimateOverlayOpen(ResultOverlayBorder);
+                        
+                        // Notify clients
+                        if (_hostService.IsRunning)
+                        {
+                            await _hostService.NotifyAnswerResultAsync(playerName, false);
+                        }
+                        
+                        await Task.Delay(1500);
+                        ResultOverlay.Visibility = Visibility.Collapsed;
+                        ResultOverlay.IsHitTestVisible = false;
+                        
+                        // Reset buzz state
+                        _gameState.BuzzOrder.Clear();
+                        _gameState.PausedForBuzz = false;
+                        UpdateGameUi();
+                    }
+                    else
+                    {
+                        // Process answer normally
+                        await ProcessAnswerLocalAsync(playerName, answer);
+                    }
+                    
+                    // Broadcast updated game state
+                    await BroadcastGameStateAsync();
                 });
                 
                 return true;

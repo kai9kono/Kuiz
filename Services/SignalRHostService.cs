@@ -164,5 +164,32 @@ namespace Kuiz.Services
                 await _connection.InvokeAsync("EndGame", LobbyCode, results);
             }
         }
+
+        // プレイヤーバズ通知
+        public async Task NotifyPlayerBuzzedAsync(string playerName)
+        {
+            if (_connection != null && _connection.State == HubConnectionState.Connected)
+            {
+                await _connection.InvokeAsync("SendBuzz", LobbyCode, playerName);
+            }
+        }
+
+        // 回答結果通知
+        public async Task NotifyAnswerResultAsync(string playerName, bool isCorrect)
+        {
+            if (_connection != null && _connection.State == HubConnectionState.Connected)
+            {
+                await _connection.InvokeAsync("SendAnswerResult", LobbyCode, playerName, isCorrect);
+            }
+        }
+
+        // 次の問題通知
+        public async Task NotifyNextQuestionAsync()
+        {
+            if (_connection != null && _connection.State == HubConnectionState.Connected)
+            {
+                await _connection.InvokeAsync("SendNextQuestion", LobbyCode);
+            }
+        }
     }
 }

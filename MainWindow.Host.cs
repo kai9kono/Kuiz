@@ -504,6 +504,35 @@ namespace Kuiz
             });
         }
 
+        private async Task BroadcastGameStateAsync()
+        {
+            if (!_isHost || !_hostService.IsRunning)
+            {
+                return;
+            }
+
+            try
+            {
+                var gameState = new
+                {
+                    revealedText = _gameState.RevealedText,
+                    scores = _gameState.Scores.ToDictionary(kv => kv.Key, kv => kv.Value),
+                    mistakes = _gameState.Mistakes.ToDictionary(kv => kv.Key, kv => kv.Value),
+                    buzzOrder = _gameState.BuzzOrder.ToList(),
+                    pausedForBuzz = _gameState.PausedForBuzz,
+                    attemptedThisQuestion = _gameState.AttemptedThisQuestion.ToList(),
+                    players = _gameState.LobbyPlayers.ToList()
+                };
+
+                await _hostService.NotifyGameStateAsync(gameState);
+                Logger.LogInfo("📡 Game state broadcasted to all clients");
+            }
+            catch (Exception ex)
+            {
+                Logger.LogError($"Failed to broadcast game state: {ex.Message}");
+            }
+        }
+
         private async void BtnRefreshQuestions_Click(object sender, RoutedEventArgs e) => await LoadQuestionsAsync();
 
         private async void BtnTestDb_Click(object sender, RoutedEventArgs e)

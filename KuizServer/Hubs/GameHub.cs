@@ -104,4 +104,14 @@ public class GameHub : Hub
     {
         await Clients.Group(lobbyCode).SendAsync("GameEnded", results);
     }
+
+    public async Task SendAnswerResult(string lobbyCode, string playerName, bool isCorrect)
+    {
+        await Clients.Group(lobbyCode).SendAsync("AnswerResult", playerName, isCorrect);
+    }
+
+    public async Task SendNextQuestion(string lobbyCode)
+    {
+        await Clients.Group(lobbyCode).SendAsync("NextQuestion");
+    }
 }

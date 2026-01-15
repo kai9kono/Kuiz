@@ -81,19 +81,31 @@ namespace Kuiz
         {
             if (_gameState.PausedForBuzz || _gameState.BuzzOrder.Count > 0)
             {
-                TxtGameStatus.Text = "Already answering";
+                TxtGameStatus.Text = "回答中です";
                 return;
             }
 
             if (_gameState.AttemptedThisQuestion.Contains(name))
             {
-                TxtGameStatus.Text = "You already attempted this question";
+                TxtGameStatus.Text = "この問題では既に回答済みです";
                 return;
             }
 
             _gameState.ProcessBuzz(name);
+            
+            // Show answering badge
+            TxtAnsweringBadge.Text = $"回答中: {name}";
+            TxtAnsweringBadge.Visibility = Visibility.Visible;
+            TxtGameStatus.Text = "回答入力中...";
+            
             UpdateGameUi();
-            TxtGameStatus.Text = "Waiting for answer...";
+            
+            // Notify all clients that this player buzzed
+            if (_hostService.IsRunning)
+            {
+                await _hostService.NotifyPlayerBuzzedAsync(name);
+                await BroadcastGameStateAsync();
+            }
 
             var answer = await ShowAnswerDialog(10);
 
@@ -108,56 +120,43 @@ namespace Kuiz
                 Logger.LogInfo($"?? No answer from {name} (timeout)");
                 _gameState.PausedForBuzz = false;
                 _gameState.BuzzOrder.Clear();
-                UpdateGameUi();
+                
+                // Broadcast updated state
+                if (_hostService.IsRunning)
+                {
+                    await BroadcastGameStateAsync();
+                }
             }
+            
+            // Hide answering badge
+            TxtAnsweringBadge.Visibility = Visibility.Collapsed;
+            UpdateGameUi();
         }
 
         private async Task HandleClientBuzzAsync(string name)
         {
             if (_gameState.PausedForBuzz || _gameState.BuzzOrder.Count > 0)
             {
-                TxtGameStatus.Text = "Already answering";
+                TxtGameStatus.Text = "回答中です";
                 return;
             }
 
             if (_gameState.AttemptedThisQuestion.Contains(name))
             {
-                TxtGameStatus.Text = "You already attempted this question";
+                TxtGameStatus.Text = "この問題では既に回答済みです";
                 return;
             }
 
             try
             {
-                // Send buzz via SignalR
+                // Send buzz via SignalR - host will handle the rest
                 await _signalRClient.SendBuzzAsync();
                 Logger.LogInfo("?? Buzz sent via SignalR");
-                
-                // Add to local buzz order for immediate feedback
-                _gameState.ProcessBuzz(name);
-                UpdateGameUi();
-                TxtGameStatus.Text = "Waiting for answer...";
-
-                var answer = await ShowAnswerDialog(10);
-
-                if (answer != null)
-                {
-                    // Send answer via SignalR
-                    await _signalRClient.SendAnswerAsync(answer);
-                    Logger.LogInfo($"?? Answer sent via SignalR: {answer}");
-                    TxtGameStatus.Text = "Answer sent";
-                }
-                else
-                {
-                    Dispatcher.Invoke(() =>
-                    {
-                        BtnGameBuzz.IsEnabled = false;
-                        UpdateBuzzButtonState();
-                    });
-                }
+                TxtGameStatus.Text = "バズ送信中...";
             }
             catch (Exception ex)
             {
-                TxtGameStatus.Text = "Buzz error: " + ex.Message;
+                TxtGameStatus.Text = "バズエラー: " + ex.Message;
                 Logger.LogError(ex);
             }
         }
@@ -179,8 +178,16 @@ namespace Kuiz
                     ResultOverlay.Visibility = Visibility.Visible;
                     ResultOverlay.IsHitTestVisible = true;
                     AnimateOverlayOpen(ResultOverlayBorder);
+                    TxtAnsweringBadge.Visibility = Visibility.Collapsed;
                     UpdateGameUi();
                 });
+
+                // Broadcast result and updated game state if host
+                if (_isHost && _hostService.IsRunning)
+                {
+                    await _hostService.NotifyAnswerResultAsync(name, true);
+                    await BroadcastGameStateAsync();
+                }
 
                 await Task.Delay(1000);
                 HideOverlay();
@@ -193,11 +200,18 @@ namespace Kuiz
                 {
                     TxtGameStatus.Text = $"不正解: {name} (ミス数: {mistakes})";
                     TxtOverlayStatus.Text = "不正解...";
-                    //TxtOverlayDetail.Text = $"ミス数: {mistakes}";
                     ResultOverlay.Visibility = Visibility.Visible;
                     ResultOverlay.IsHitTestVisible = true;
                     AnimateOverlayOpen(ResultOverlayBorder);
+                    TxtAnsweringBadge.Visibility = Visibility.Collapsed;
                 });
+
+                // Broadcast result and updated game state if host
+                if (_isHost && _hostService.IsRunning)
+                {
+                    await _hostService.NotifyAnswerResultAsync(name, false);
+                    await BroadcastGameStateAsync();
+                }
 
                 await Task.Delay(1500);
                 HideOverlay();
@@ -223,7 +237,7 @@ namespace Kuiz
         {
             Dispatcher.Invoke(() =>
             {
-                TxtOverlayTitle.Text = "Waiting";
+                TxtOverlayTitle.Text = "待機中";
                 TxtOverlayInfo.Text = $"{answeringPlayer} が回答中...";
                 TxtOverlayInfo.Visibility = Visibility.Visible;
                 TxtOverlayAnswer.Visibility = Visibility.Collapsed;
@@ -325,31 +339,35 @@ namespace Kuiz
             _answerOverlayCts = null;
             _answerOverlayTcs = null;
 
-            // Count timeout as mistake - but only if not already counted
-            var current = _gameState.BuzzOrder.Count > 0 ? _gameState.BuzzOrder[0] : null;
-            if (current != null && !_gameState.AttemptedThisQuestion.Contains(current))
+            // Only host should handle timeout logic and game end
+            if (_isHost)
             {
-                Logger.LogInfo($"?? Answer timeout for {current} - counting as mistake");
-                _gameState.AttemptedThisQuestion.Add(current);
-                
-                // Initialize mistakes if not present
-                if (!_gameState.Mistakes.ContainsKey(current))
+                // Count timeout as mistake - but only if not already counted
+                var current = _gameState.BuzzOrder.Count > 0 ? _gameState.BuzzOrder[0] : null;
+                if (current != null && !_gameState.AttemptedThisQuestion.Contains(current))
                 {
-                    _gameState.Mistakes[current] = 0;
+                    Logger.LogInfo($"?? Answer timeout for {current} - counting as mistake");
+                    _gameState.AttemptedThisQuestion.Add(current);
+                    
+                    // Initialize mistakes if not present
+                    if (!_gameState.Mistakes.ContainsKey(current))
+                    {
+                        _gameState.Mistakes[current] = 0;
+                    }
+                    
+                    // Only increment if this exact timeout hasn't been counted yet
+                    _gameState.Mistakes[current]++;
+                    Logger.LogInfo($"   {current} now has {_gameState.Mistakes[current]} mistake(s)");
+                    
+                    UpdateGameUi();
                 }
-                
-                // Only increment if this exact timeout hasn't been counted yet
-                _gameState.Mistakes[current]++;
-                Logger.LogInfo($"   {current} now has {_gameState.Mistakes[current]} mistake(s)");
-                
-                UpdateGameUi();
-            }
-            else if (current != null)
-            {
-                Logger.LogInfo($"?? Answer timeout for {current} - already attempted, not counting again");
-            }
+                else if (current != null)
+                {
+                    Logger.LogInfo($"?? Answer timeout for {current} - already attempted, not counting again");
+                }
 
-            _ = HandleGameEndAsync(ensureAnswerReveal: true);
+                _ = HandleGameEndAsync(ensureAnswerReveal: true);
+            }
         }
 
         private void TxtOverlayAnswer_KeyDown(object sender, KeyEventArgs e)
@@ -447,6 +465,13 @@ namespace Kuiz
 
                 // Record question to history
                 _ = RecordQuestionPlayedAsync(question);
+
+                // Notify clients about next question and broadcast game state
+                if (_isHost && _hostService.IsRunning)
+                {
+                    await _hostService.NotifyNextQuestionAsync();
+                    await BroadcastGameStateAsync();
+                }
 
                 await ShowPreDisplayBannerAsync();
                 StartRevealLoop();
@@ -1009,6 +1034,12 @@ namespace Kuiz
 
         private async Task<bool> HandleGameEndAsync(bool ensureAnswerReveal = false)
         {
+            // Only host should determine game end
+            if (!_isHost)
+            {
+                return false;
+            }
+            
             if (_gameEnded)
             {
                 return true;
@@ -1024,6 +1055,18 @@ namespace Kuiz
             if (ensureAnswerReveal && allDisqualified && _gameState.CurrentQuestion != null)
             {
                 await ShowAnswerRevealAsync(_gameState.CurrentQuestion, CancellationToken.None);
+            }
+
+            // Notify clients that game has ended
+            if (_hostService.IsRunning)
+            {
+                var results = new
+                {
+                    Winner = winner ?? "No winner",
+                    Scores = _gameState.Scores.ToDictionary(kv => kv.Key, kv => kv.Value),
+                    Mistakes = _gameState.Mistakes.ToDictionary(kv => kv.Key, kv => kv.Value)
+                };
+                await _hostService.NotifyGameEndAsync(results);
             }
 
             ShowResult(winner ?? "No winner");

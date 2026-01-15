@@ -25,6 +25,8 @@ namespace Kuiz.Services
         public event Action<string>? OnPlayerBuzzed;
         public event Action<object>? OnGameStateUpdated;
         public event Action<object>? OnGameEnded;
+        public event Action<string, bool>? OnAnswerResult;  // playerName, isCorrect
+        public event Action? OnNextQuestion;
 
         public async Task<bool> ConnectAsync(string serverUrl, string lobbyCode, string playerName)
         {
@@ -130,6 +132,16 @@ namespace Kuiz.Services
             {
                 OnGameEnded?.Invoke(results);
             });
+
+            _connection.On<string, bool>("AnswerResult", (playerName, isCorrect) =>
+            {
+                OnAnswerResult?.Invoke(playerName, isCorrect);
+            });
+
+            _connection.On("NextQuestion", () =>
+            {
+                OnNextQuestion?.Invoke();
+            });
         }
 
         public async Task SendBuzzAsync()
@@ -154,20 +166,26 @@ namespace Kuiz.Services
             {
                 return await _connection.InvokeAsync<object>("GetLobbyState", _lobbyCode);
             }
-            return new { exists = false };
+            return new { Exists = false };
         }
 
         public async Task DisconnectAsync()
         {
             try
             {
-                if (_connection != null && _connection.State == HubConnectionState.Connected)
+                if (_connection != null)
                 {
-                    await _connection.InvokeAsync("LeaveLobby", _lobbyCode, _playerName);
-                    await _connection.StopAsync();
+                    if (_connection.State == HubConnectionState.Connected)
+                    {
+                        await _connection.InvokeAsync("LeaveLobby", _lobbyCode, _playerName);
+                        await _connection.StopAsync();
+                    }
                     await _connection.DisposeAsync();
+                    _connection = null;
                 }
-                _connection = null;
+
+                _playerName = string.Empty;
+                _lobbyCode = string.Empty;
             }
             catch (Exception ex)
             {
@@ -176,3 +194,4 @@ namespace Kuiz.Services
         }
     }
 }
+
