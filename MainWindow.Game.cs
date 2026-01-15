@@ -505,6 +505,7 @@ namespace Kuiz
                 if (current == null) return;
 
                 var fullText = current.Text;
+                int lastBroadcastIndex = -1;
 
                 while (!ct.IsCancellationRequested && _gameState.RevealIndex < fullText.Length)
                 {
@@ -517,6 +518,29 @@ namespace Kuiz
                     _gameState.RevealIndex++;
                     _gameState.RevealedText = fullText.Substring(0, _gameState.RevealIndex);
                     UpdateGameUi();
+                    
+                    // If host, broadcast game state to clients via SignalR every 3 characters or on last character
+                    if (_isHost && _hostService.IsRunning && 
+                        (_gameState.RevealIndex - lastBroadcastIndex >= 3 || _gameState.RevealIndex >= fullText.Length))
+                    {
+                        try
+                        {
+                            var gameState = new
+                            {
+                                revealedText = _gameState.RevealedText,
+                                revealIndex = _gameState.RevealIndex,
+                                totalLength = fullText.Length,
+                                scores = _gameState.Scores.ToDictionary(kv => kv.Key, kv => kv.Value),
+                                mistakes = _gameState.Mistakes.ToDictionary(kv => kv.Key, kv => kv.Value)
+                            };
+                            await _hostService.NotifyGameStateAsync(gameState);
+                            lastBroadcastIndex = _gameState.RevealIndex;
+                        }
+                        catch (Exception ex)
+                        {
+                            Logger.LogError($"Failed to broadcast game state: {ex.Message}");
+                        }
+                    }
 
                     var delayMs = _gameState.FastReveal ? _fastRevealIntervalMs : _revealIntervalMs;
                     await Task.Delay(delayMs, ct);
@@ -527,6 +551,28 @@ namespace Kuiz
                     // Record the time when question reveal completed
                     _gameState.RevealCompletedTime = DateTime.UtcNow;
                     Logger.LogInfo($"?? Question reveal completed at {_gameState.RevealCompletedTime:HH:mm:ss.fff}");
+                    
+                    // Final broadcast with complete text
+                    if (_isHost && _hostService.IsRunning)
+                    {
+                        try
+                        {
+                            var gameState = new
+                            {
+                                revealedText = _gameState.RevealedText,
+                                revealIndex = _gameState.RevealIndex,
+                                totalLength = fullText.Length,
+                                revealCompleted = true,
+                                scores = _gameState.Scores.ToDictionary(kv => kv.Key, kv => kv.Value),
+                                mistakes = _gameState.Mistakes.ToDictionary(kv => kv.Key, kv => kv.Value)
+                            };
+                            await _hostService.NotifyGameStateAsync(gameState);
+                        }
+                        catch (Exception ex)
+                        {
+                            Logger.LogError($"Failed to broadcast final game state: {ex.Message}");
+                        }
+                    }
                     
                     await HandleRevealCompleteAsync(ct);
                 }

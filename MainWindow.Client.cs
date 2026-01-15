@@ -1,4 +1,4 @@
-using System;
+ï»¿using System;
 using System.Linq;
 using System.Net.Http;
 using System.Text;
@@ -11,7 +11,7 @@ using Kuiz.Models;
 namespace Kuiz
 {
     /// <summary>
-    /// ƒNƒ‰ƒCƒAƒ“ƒgiQ‰ÁÒjŠÖ˜A‚ÌUIˆ—
+    /// ã‚¯ãƒ©ã‚¤ã‚¢ãƒ³ãƒˆï¼ˆå‚åŠ è€…ï¼‰é–¢é€£ã®UIå‡¦ç†
     /// </summary>
     public partial class MainWindow
     {
@@ -29,11 +29,11 @@ namespace Kuiz
 
             if (string.IsNullOrEmpty(lobbyCode) || lobbyCode.Length != 6 || string.IsNullOrEmpty(name))
             {
-                TxtJoinStatus.Text = "ƒƒr[ƒR[ƒh‚ÆƒvƒŒƒCƒ„[–¼‚ğ“ü—Í‚µ‚Ä‚­‚¾‚³‚¢";
+                TxtJoinStatus.Text = "ãƒ­ãƒ“ãƒ¼ã‚³ãƒ¼ãƒ‰ã¨ãƒ—ãƒ¬ã‚¤ãƒ¤ãƒ¼åã‚’å…¥åŠ›ã—ã¦ãã ã•ã„";
                 return;
             }
 
-            TxtJoinStatus.Text = "Ú‘±’†...";
+            TxtJoinStatus.Text = "æ¥ç¶šä¸­...";
             BtnJoinConnect.IsEnabled = false;
 
             // Always use Railway server
@@ -53,8 +53,8 @@ namespace Kuiz
 
                 if (success)
                 {
-                    Logger.LogInfo("? Successfully joined lobby!");
-                    TxtJoinStatus.Text = "ƒƒr[‚ÉQ‰Á‚µ‚Ü‚µ‚½I";
+                    Logger.LogInfo("âœ… Successfully joined lobby!");
+                    TxtJoinStatus.Text = "ãƒ­ãƒ“ãƒ¼ã«å‚åŠ ã—ã¾ã—ãŸï¼";
                     _profileService.Save(name);
                     
                     // Mark as client (not host)
@@ -77,8 +77,8 @@ namespace Kuiz
                 }
                 else
                 {
-                    Logger.LogInfo("? Failed to join lobby - server returned false");
-                    TxtJoinStatus.Text = "ƒƒr[‚ªŒ©‚Â‚©‚è‚Ü‚¹‚ñBƒR[ƒh‚ğŠm”F‚µ‚Ä‚­‚¾‚³‚¢";
+                    Logger.LogInfo("âŒ Failed to join lobby - server returned false");
+                    TxtJoinStatus.Text = "ãƒ­ãƒ“ãƒ¼ãŒè¦‹ã¤ã‹ã‚Šã¾ã›ã‚“ã€‚ã‚³ãƒ¼ãƒ‰ã‚’ç¢ºèªã—ã¦ãã ã•ã„";
                     BtnJoinConnect.IsEnabled = true;
                 }
             }
@@ -86,7 +86,7 @@ namespace Kuiz
             {
                 Logger.LogError($"? Exception during join: {ex.Message}");
                 Logger.LogError(ex);
-                TxtJoinStatus.Text = $"ƒGƒ‰[: {ex.Message}";
+                TxtJoinStatus.Text = $"ã‚¨ãƒ©ãƒ¼: {ex.Message}";
                 BtnJoinConnect.IsEnabled = true;
             }
         }
@@ -97,8 +97,56 @@ namespace Kuiz
             {
                 Dispatcher.Invoke(() =>
                 {
-                    // ƒQ[ƒ€ó‘Ô‚ÌXVˆ—
                     Logger.LogInfo("Game state updated via SignalR");
+                    
+                    try
+                    {
+                        // Parse game state from host
+                        var stateJson = System.Text.Json.JsonSerializer.Serialize(state);
+                        var gameState = System.Text.Json.JsonSerializer.Deserialize<Dictionary<string, JsonElement>>(stateJson);
+                        
+                        if (gameState != null)
+                        {
+                            // Update revealed text
+                            if (gameState.ContainsKey("revealedText"))
+                            {
+                                var revealedText = gameState["revealedText"].GetString() ?? "";
+                                _gameState.RevealedText = revealedText;
+                                TxtGameQuestion.Text = revealedText;
+                            }
+                            
+                            // Update scores
+                            if (gameState.ContainsKey("scores"))
+                            {
+                                var scoresElement = gameState["scores"];
+                                foreach (var prop in scoresElement.EnumerateObject())
+                                {
+                                    var playerName = prop.Name;
+                                    var score = prop.Value.GetInt32();
+                                    _gameState.Scores[playerName] = score;
+                                }
+                            }
+                            
+                            // Update mistakes
+                            if (gameState.ContainsKey("mistakes"))
+                            {
+                                var mistakesElement = gameState["mistakes"];
+                                foreach (var prop in mistakesElement.EnumerateObject())
+                                {
+                                    var playerName = prop.Name;
+                                    var mistakes = prop.Value.GetInt32();
+                                    _gameState.Mistakes[playerName] = mistakes;
+                                }
+                            }
+                            
+                            // Update game UI to reflect changes
+                            UpdateGameUi();
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        Logger.LogError($"Failed to update game state: {ex.Message}");
+                    }
                 });
             };
 
@@ -106,7 +154,7 @@ namespace Kuiz
             {
                 Dispatcher.Invoke(() =>
                 {
-                    Logger.LogInfo($"?? Player joined: {playerName}");
+                    Logger.LogInfo($"ğŸ“¥ Player joined: {playerName}");
                     
                     // Add player to lobby list
                     if (!_gameState.LobbyPlayers.Contains(playerName))
@@ -121,7 +169,7 @@ namespace Kuiz
             {
                 Dispatcher.Invoke(() =>
                 {
-                    Logger.LogInfo($"?? Player left: {playerName}");
+                    Logger.LogInfo($"ğŸ“¤ Player left: {playerName}");
                     
                     // Remove player from lobby list
                     _gameState.LobbyPlayers.Remove(playerName);
@@ -133,7 +181,7 @@ namespace Kuiz
             {
                 Dispatcher.Invoke(() =>
                 {
-                    Logger.LogInfo($"?? Player buzzed: {playerName}");
+                    Logger.LogInfo($"ğŸ”” Player buzzed: {playerName}");
                     
                     // Handle buzz in game (simplified - just log for now)
                     // Full buzz handling is done on host side
@@ -144,7 +192,7 @@ namespace Kuiz
             {
                 await Dispatcher.InvokeAsync(async () =>
                 {
-                    Logger.LogInfo("?? Game starting!");
+                    Logger.LogInfo("ğŸ® Game starting!");
                     
                     // Parse game settings
                     try
@@ -181,7 +229,7 @@ namespace Kuiz
                             
                             _gameState.InitializeScores();
                             
-                            Logger.LogInfo($"?? Game initialized with {gameSettings.Players.Count} players");
+                            Logger.LogInfo($"ğŸ“‹ Game initialized with {gameSettings.Players.Count} players");
                         }
                     }
                     catch (Exception ex)
@@ -202,7 +250,7 @@ namespace Kuiz
             {
                 Dispatcher.Invoke(() =>
                 {
-                    Logger.LogInfo("?? Game ended");
+                    Logger.LogInfo("ğŸ Game ended");
                     // Handle game end
                 });
             };
@@ -212,15 +260,18 @@ namespace Kuiz
         {
             try
             {
+                Logger.LogInfo($"ğŸ“‹ Requesting lobby state for code: {lobbyCode}");
                 var state = await _signalRClient.GetLobbyStateAsync();
                 
                 // Parse lobby state
                 var stateJson = System.Text.Json.JsonSerializer.Serialize(state);
+                Logger.LogInfo($"ğŸ“‹ Received lobby state JSON: {stateJson}");
+                
                 var lobbyState = System.Text.Json.JsonSerializer.Deserialize<LobbyState>(stateJson);
                 
                 if (lobbyState != null && lobbyState.Exists)
                 {
-                    Logger.LogInfo($"?? Lobby state: {lobbyState.PlayerCount} players");
+                    Logger.LogInfo($"ğŸ“‹ Lobby state: {lobbyState.PlayerCount} players - {string.Join(", ", lobbyState.Players)}");
                     
                     // Update lobby code display
                     TxtLobbyCode.Text = lobbyState.Code;
@@ -230,9 +281,14 @@ namespace Kuiz
                     foreach (var player in lobbyState.Players)
                     {
                         _gameState.AddPlayer(player);
+                        Logger.LogInfo($"  - Added player: {player}");
                     }
                     
                     UpdateLobbyUi();
+                }
+                else
+                {
+                    Logger.LogError($"âŒ Lobby state is null or does not exist");
                 }
             }
             catch (Exception ex)
@@ -247,7 +303,7 @@ namespace Kuiz
             // Disable host-only controls
             BtnHostStartGame.IsEnabled = false;
             BtnHostStartGame.Opacity = 0.5;
-            BtnHostStartGame.ToolTip = "ƒzƒXƒg‚Ì‚İ‚ªŠJn‚Å‚«‚Ü‚·";
+            BtnHostStartGame.ToolTip = "ãƒ›ã‚¹ãƒˆã®ã¿ãŒé–‹å§‹ã§ãã¾ã™";
             
             // Disable game settings
             TxtPointsToWin.IsReadOnly = true;
@@ -295,7 +351,7 @@ namespace Kuiz
                 }
             }
             
-            Logger.LogInfo("?? Client lobby mode enabled (read-only)");
+            Logger.LogInfo("ğŸ”’ Client lobby mode enabled (read-only)");
         }
 
         // Helper class for lobby state deserialization

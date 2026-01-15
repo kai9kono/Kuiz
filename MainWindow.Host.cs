@@ -1,4 +1,4 @@
-using System;
+ï»¿using System;
 using System.Linq;
 using System.Net.Http;
 using System.Text;
@@ -11,7 +11,7 @@ using Kuiz.Services;
 namespace Kuiz
 {
     /// <summary>
-    /// ƒzƒXƒgŠÖ˜A‚ÌUIˆ—
+    /// ãƒ›ã‚¹ãƒˆé–¢é€£ã®UIå‡¦ç†
     /// </summary>
     public partial class MainWindow
     {
@@ -41,8 +41,8 @@ namespace Kuiz
             
             // Update confirmation message based on host/client status
             var confirmText = _isHost 
-                ? "ƒƒr[‚ğ•Â‚¶‚Äƒ^ƒCƒgƒ‹‚É–ß‚è‚Ü‚·‚©H\ni‘Sˆõ‚ªØ’f‚³‚ê‚Ü‚·j"
-                : "ƒƒr[‚©‚ç”²‚¯‚Ü‚·‚©H";
+                ? "ãƒ­ãƒ“ãƒ¼ã‚’é–‰ã˜ã¦ã‚¿ã‚¤ãƒˆãƒ«ã«æˆ»ã‚Šã¾ã™ã‹ï¼Ÿ\nï¼ˆå…¨å“¡ãŒåˆ‡æ–­ã•ã‚Œã¾ã™ï¼‰"
+                : "ãƒ­ãƒ“ãƒ¼ã‹ã‚‰æŠœã‘ã¾ã™ã‹ï¼Ÿ";
             
             // Find the TextBlock in LeaveLobbyConfirmOverlay and update its text
             var border = LeaveLobbyConfirmBorder;
@@ -126,51 +126,51 @@ namespace Kuiz
             // Validate Points to Win
             if (string.IsNullOrWhiteSpace(TxtPointsToWin.Text))
             {
-                ShowToast("Ÿ—˜ƒ|ƒCƒ“ƒg‚ğ“ü—Í‚µ‚Ä‚­‚¾‚³‚¢", isError: true);
+                ShowToast("å‹åˆ©ãƒã‚¤ãƒ³ãƒˆã‚’å…¥åŠ›ã—ã¦ãã ã•ã„", isError: true);
                 return false;
             }
             
             if (!int.TryParse(TxtPointsToWin.Text, out int pointsToWin) || pointsToWin <= 0)
             {
-                ShowToast("Ÿ—˜ƒ|ƒCƒ“ƒg‚Í1ˆÈã‚Ì”š‚ğ“ü—Í‚µ‚Ä‚­‚¾‚³‚¢", isError: true);
+                ShowToast("å‹åˆ©ãƒã‚¤ãƒ³ãƒˆã¯1ä»¥ä¸Šã®æ•°å­—ã‚’å…¥åŠ›ã—ã¦ãã ã•ã„", isError: true);
                 return false;
             }
             
             if (pointsToWin > 999)
             {
-                ShowToast("Ÿ—˜ƒ|ƒCƒ“ƒg‚ª‘å‚«‚·‚¬‚Ü‚·iÅ‘å999j", isError: true);
+                ShowToast("å‹åˆ©ãƒã‚¤ãƒ³ãƒˆãŒå¤§ãã™ãã¾ã™ï¼ˆæœ€å¤§999ï¼‰", isError: true);
                 return false;
             }
             
             // Validate Max Mistakes
             if (string.IsNullOrWhiteSpace(TxtMaxMistakes.Text))
             {
-                ShowToast("Å‘åƒ~ƒX‰ñ”‚ğ“ü—Í‚µ‚Ä‚­‚¾‚³‚¢", isError: true);
+                ShowToast("æœ€å¤§ãƒŸã‚¹å›æ•°ã‚’å…¥åŠ›ã—ã¦ãã ã•ã„", isError: true);
                 return false;
             }
             
             if (!int.TryParse(TxtMaxMistakes.Text, out int maxMistakes) || maxMistakes <= 0)
             {
-                ShowToast("Å‘åƒ~ƒX‰ñ”‚Í1ˆÈã‚Ì”š‚ğ“ü—Í‚µ‚Ä‚­‚¾‚³‚¢", isError: true);
+                ShowToast("æœ€å¤§ãƒŸã‚¹å›æ•°ã¯1ä»¥ä¸Šã®æ•°å­—ã‚’å…¥åŠ›ã—ã¦ãã ã•ã„", isError: true);
                 return false;
             }
             
             if (maxMistakes > 99)
             {
-                ShowToast("Å‘åƒ~ƒX‰ñ”‚ª‘å‚«‚·‚¬‚Ü‚·iÅ‘å99j", isError: true);
+                ShowToast("æœ€å¤§ãƒŸã‚¹å›æ•°ãŒå¤§ãã™ãã¾ã™ï¼ˆæœ€å¤§99ï¼‰", isError: true);
                 return false;
             }
             
             // Validate Number of Questions
             if (string.IsNullOrWhiteSpace(TxtNumQuestions.Text))
             {
-                ShowToast("–â‘è”‚ğ“ü—Í‚µ‚Ä‚­‚¾‚³‚¢", isError: true);
+                ShowToast("å•é¡Œæ•°ã‚’å…¥åŠ›ã—ã¦ãã ã•ã„", isError: true);
                 return false;
             }
             
             if (!int.TryParse(TxtNumQuestions.Text, out int numQuestions) || numQuestions <= 0)
             {
-                ShowToast("–â‘è”‚Í1ˆÈã‚Ì”š‚ğ“ü—Í‚µ‚Ä‚­‚¾‚³‚¢", isError: true);
+                ShowToast("å•é¡Œæ•°ã¯1ä»¥ä¸Šã®æ•°å­—ã‚’å…¥åŠ›ã—ã¦ãã ã•ã„", isError: true);
                 return false;
             }
             
@@ -178,7 +178,7 @@ namespace Kuiz
             int availableQuestions = _questionService.Questions?.Count ?? 0;
             if (numQuestions > availableQuestions)
             {
-                ShowToast($"–â‘è”‚ª‘½‚·‚¬‚Ü‚·i—˜—p‰Â”\: {availableQuestions}–âj", isError: true);
+                ShowToast($"å•é¡Œæ•°ãŒå¤šã™ãã¾ã™ï¼ˆåˆ©ç”¨å¯èƒ½: {availableQuestions}å•ï¼‰", isError: true);
                 return false;
             }
             
@@ -190,7 +190,7 @@ namespace Kuiz
             StartGameConfirm.Visibility = Visibility.Collapsed;
             StartGameConfirm.IsHitTestVisible = false;
 
-            // ƒT[ƒo[Ú‘±ƒ`ƒFƒbƒN
+            // ã‚µãƒ¼ãƒãƒ¼æ¥ç¶šãƒã‚§ãƒƒã‚¯
             try
             {
                 await _questionService.TestConnectionAsync();
@@ -198,8 +198,8 @@ namespace Kuiz
             catch (Exception ex)
             {
                 Logger.LogError(ex);
-                // ƒT[ƒo[Ú‘±ƒGƒ‰[‚Ìƒ|ƒbƒvƒAƒbƒv‚ğ•\¦
-                ShowServerErrorPopup("ƒT[ƒo[‚ÉÚ‘±‚Å‚«‚Ü‚¹‚ñB\nƒCƒ“ƒ^[ƒlƒbƒgÚ‘±‚ğŠm”F‚µ‚Ä‚­‚¾‚³‚¢B");
+                // ã‚µãƒ¼ãƒãƒ¼æ¥ç¶šã‚¨ãƒ©ãƒ¼ã®ãƒãƒƒãƒ—ã‚¢ãƒƒãƒ—ã‚’è¡¨ç¤º
+                ShowServerErrorPopup("ã‚µãƒ¼ãƒãƒ¼ã«æ¥ç¶šã§ãã¾ã›ã‚“ã€‚\nã‚¤ãƒ³ã‚¿ãƒ¼ãƒãƒƒãƒˆæ¥ç¶šã‚’ç¢ºèªã—ã¦ãã ã•ã„ã€‚");
                 return;
             }
 
@@ -212,7 +212,7 @@ namespace Kuiz
                 if (!_hostService.IsRunning)
                 {
                     TxtGameStatus.Text = "Failed to start host service";
-                    ShowServerErrorPopup("ƒzƒXƒgƒT[ƒrƒX‚Ì‹N“®‚É¸”s‚µ‚Ü‚µ‚½B");
+                    ShowServerErrorPopup("ãƒ›ã‚¹ãƒˆã‚µãƒ¼ãƒ“ã‚¹ã®èµ·å‹•ã«å¤±æ•—ã—ã¾ã—ãŸã€‚");
                     return;
                 }
             }
@@ -227,7 +227,7 @@ namespace Kuiz
                 catch (Exception ex)
                 {
                     Logger.LogError(ex);
-                    ShowServerErrorPopup("–â‘è‚Ì“Ç‚İ‚İ‚É¸”s‚µ‚Ü‚µ‚½B\nƒT[ƒo[‚ÉÚ‘±‚Å‚«‚Ü‚¹‚ñB");
+                    ShowServerErrorPopup("å•é¡Œã®èª­ã¿è¾¼ã¿ã«å¤±æ•—ã—ã¾ã—ãŸã€‚\nã‚µãƒ¼ãƒãƒ¼ã«æ¥ç¶šã§ãã¾ã›ã‚“ã€‚");
                     return;
                 }
             }
@@ -294,7 +294,7 @@ namespace Kuiz
                     };
                     
                     await _hostService.NotifyGameStartAsync(gameSettings);
-                    Logger.LogInfo("?? Game start notification sent to all clients with player list");
+                    Logger.LogInfo("ğŸ“¢ Game start notification sent to all clients with player list");
                 }
                 catch (Exception ex)
                 {
@@ -359,7 +359,7 @@ namespace Kuiz
                 if (error != null)
                 {
                     try { Clipboard.SetText(error); } catch { }
-                    MessageBox.Show(error, "ƒƒr[ì¬ƒGƒ‰[", MessageBoxButton.OK, MessageBoxImage.Warning);
+                    MessageBox.Show(error, "ãƒ­ãƒ“ãƒ¼ä½œæˆã‚¨ãƒ©ãƒ¼", MessageBoxButton.OK, MessageBoxImage.Warning);
                 }
                 return;
             }
@@ -401,13 +401,13 @@ namespace Kuiz
                 if (!string.IsNullOrWhiteSpace(code) && code != "------")
                 {
                     Clipboard.SetText(code);
-                    ShowToast("ƒƒr[ƒR[ƒh‚ğƒRƒs[‚µ‚Ü‚µ‚½I");
+                    ShowToast("ãƒ­ãƒ“ãƒ¼ã‚³ãƒ¼ãƒ‰ã‚’ã‚³ãƒ”ãƒ¼ã—ã¾ã—ãŸï¼");
                 }
             }
             catch (Exception ex)
             {
                 Logger.LogError(ex);
-                ShowToast("ƒRƒs[‚É¸”s‚µ‚Ü‚µ‚½", isError: true);
+                ShowToast("ã‚³ãƒ”ãƒ¼ã«å¤±æ•—ã—ã¾ã—ãŸ", isError: true);
             }
         }
         
