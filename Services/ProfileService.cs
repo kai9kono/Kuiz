@@ -5,7 +5,7 @@ using System.Text.Json;
 namespace Kuiz.Services
 {
     /// <summary>
-    /// ƒvƒƒtƒB[ƒ‹iƒvƒŒƒCƒ„[–¼j‚Æİ’è‚Ì•Û‘¶E“Ç‚İ‚İ‚ğ’S“–
+    /// ãƒ—ãƒ­ãƒ•ã‚£ãƒ¼ãƒ«ï¼ˆãƒ—ãƒ¬ã‚¤ãƒ¤ãƒ¼åï¼‰ã¨è¨­å®šã®ä¿å­˜ãƒ»èª­ã¿è¾¼ã¿ã‚’æ‹…å½“
     /// </summary>
     public class ProfileService
     {
@@ -17,7 +17,7 @@ namespace Kuiz.Services
 
         public ProfileService()
         {
-            _profileDir = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Kuiz");
+            _profileDir = Path.Combine(Kuiz.DebugSession.GetDataRoot(Environment.SpecialFolder.LocalApplicationData), "Kuiz");
             _profilePath = Path.Combine(_profileDir, "profile.json");
         }
 
@@ -37,21 +37,21 @@ namespace Kuiz.Services
                         }
                         else
                         {
-                            PlayerName = "‚¿‚Ñ‚·‚¯–¾‘¾q";
+                            PlayerName = "ã¡ã³ã™ã‘æ˜å¤ªå­";
                         }
                         IsDarkMode = obj.IsDarkMode;
                     }
                 }
                 else
                 {
-                    // ƒvƒƒtƒ@ƒCƒ‹ƒtƒ@ƒCƒ‹‚ª‘¶İ‚µ‚È‚¢ê‡AƒfƒtƒHƒ‹ƒg–¼‚ğİ’è
-                    PlayerName = "‚¿‚Ñ‚·‚¯–¾‘¾q";
+                    // ãƒ—ãƒ­ãƒ•ã‚¡ã‚¤ãƒ«ãƒ•ã‚¡ã‚¤ãƒ«ãŒå­˜åœ¨ã—ãªã„å ´åˆã€ãƒ‡ãƒ•ã‚©ãƒ«ãƒˆåã‚’è¨­å®š
+                    PlayerName = "ã¡ã³ã™ã‘æ˜å¤ªå­";
                 }
             }
             catch (Exception ex)
             {
                 Logger.LogError(ex);
-                PlayerName = "‚¿‚Ñ‚·‚¯–¾‘¾q";
+                PlayerName = "ã¡ã³ã™ã‘æ˜å¤ªå­";
             }
         }
 

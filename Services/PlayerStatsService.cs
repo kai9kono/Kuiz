@@ -6,13 +6,13 @@ using Kuiz.Models;
 namespace Kuiz.Services
 {
     /// <summary>
-    /// ƒvƒŒƒCƒ„[‚Ì“Œvî•ñ‚ğŠÇ—‚·‚éƒT[ƒrƒX
+    /// ãƒ—ãƒ¬ã‚¤ãƒ¤ãƒ¼ã®çµ±è¨ˆæƒ…å ±ã‚’ç®¡ç†ã™ã‚‹ã‚µãƒ¼ãƒ“ã‚¹
     /// </summary>
     public class PlayerStatsService
     {
         private const string StatsFileName = "player_stats.json";
         private static readonly string StatsFilePath = Path.Combine(
-            Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+            Kuiz.DebugSession.GetDataRoot(Environment.SpecialFolder.LocalApplicationData),
             "Kuiz",
             StatsFileName
         );
@@ -26,7 +26,7 @@ namespace Kuiz.Services
         }
 
         /// <summary>
-        /// Œ»İ‚Ì“Œvî•ñ‚ğæ“¾
+        /// ç¾åœ¨ã®çµ±è¨ˆæƒ…å ±ã‚’å–å¾—
         /// </summary>
         public PlayerStats GetStats()
         {
@@ -34,7 +34,7 @@ namespace Kuiz.Services
         }
 
         /// <summary>
-        /// ƒQ[ƒ€ŠJn‚ÉŒÄ‚Î‚ê‚é
+        /// ã‚²ãƒ¼ãƒ é–‹å§‹æ™‚ã«å‘¼ã°ã‚Œã‚‹
         /// </summary>
         public void OnGameStarted()
         {
@@ -44,7 +44,7 @@ namespace Kuiz.Services
         }
 
         /// <summary>
-        /// ³‰ğ‚ÉŒÄ‚Î‚ê‚é
+        /// æ­£è§£æ™‚ã«å‘¼ã°ã‚Œã‚‹
         /// </summary>
         public void OnCorrectAnswer()
         {
@@ -54,7 +54,7 @@ namespace Kuiz.Services
         }
 
         /// <summary>
-        /// ƒ~ƒX‚ÉŒÄ‚Î‚ê‚é
+        /// ãƒŸã‚¹æ™‚ã«å‘¼ã°ã‚Œã‚‹
         /// </summary>
         public void OnMistake()
         {
@@ -64,7 +64,7 @@ namespace Kuiz.Services
         }
 
         /// <summary>
-        /// Ÿ—˜‚ÉŒÄ‚Î‚ê‚é
+        /// å‹åˆ©æ™‚ã«å‘¼ã°ã‚Œã‚‹
         /// </summary>
         public void OnWin()
         {
@@ -74,7 +74,7 @@ namespace Kuiz.Services
         }
 
         /// <summary>
-        /// “Œvî•ñ‚ğƒtƒ@ƒCƒ‹‚©‚ç“Ç‚İ‚Ş
+        /// çµ±è¨ˆæƒ…å ±ã‚’ãƒ•ã‚¡ã‚¤ãƒ«ã‹ã‚‰èª­ã¿è¾¼ã‚€
         /// </summary>
         private void Load()
         {
@@ -102,7 +102,7 @@ namespace Kuiz.Services
         }
 
         /// <summary>
-        /// “Œvî•ñ‚ğƒtƒ@ƒCƒ‹‚É•Û‘¶
+        /// çµ±è¨ˆæƒ…å ±ã‚’ãƒ•ã‚¡ã‚¤ãƒ«ã«ä¿å­˜
         /// </summary>
         private void Save()
         {
@@ -128,7 +128,7 @@ namespace Kuiz.Services
         }
 
         /// <summary>
-        /// “Œvî•ñ‚ğƒŠƒZƒbƒg
+        /// çµ±è¨ˆæƒ…å ±ã‚’ãƒªã‚»ãƒƒãƒˆ
         /// </summary>
         public void Reset()
         {

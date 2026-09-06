@@ -5,14 +5,14 @@ using System.Text;
 namespace Kuiz
 {
     /// <summary>
-    /// ƒAƒvƒŠƒP[ƒVƒ‡ƒ“‚ÌƒƒOo—Í‚ğ’S“–
-    /// MSIX‘Î‰: LocalApplicationData‚É•Û‘¶
+    /// ã‚¢ãƒ—ãƒªã‚±ãƒ¼ã‚·ãƒ§ãƒ³ã®ãƒ­ã‚°å‡ºåŠ›ã‚’æ‹…å½“
+    /// MSIXå¯¾å¿œ: LocalApplicationDataã«ä¿å­˜
     /// </summary>
     internal static class Logger
     {
         private static readonly object _lock = new();
         private static readonly string _dir = Path.Combine(
-            Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), 
+            Kuiz.DebugSession.GetDataRoot(Environment.SpecialFolder.LocalApplicationData),
             "Kuiz", 
             "logs");
         private static readonly string _file = Path.Combine(_dir, $"kuiz_{DateTime.Now:yyyyMMdd}.log");

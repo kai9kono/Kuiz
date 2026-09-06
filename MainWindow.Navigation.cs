@@ -7,7 +7,7 @@ using Kuiz.Services;
 namespace Kuiz
 {
     /// <summary>
-    /// ƒiƒrƒQ[ƒVƒ‡ƒ“ŠÖ˜A‚ÌUIˆ—
+    /// ãƒŠãƒ“ã‚²ãƒ¼ã‚·ãƒ§ãƒ³é–¢é€£ã®UIå‡¦ç†
     /// </summary>
     public partial class MainWindow
     {
@@ -188,13 +188,13 @@ namespace Kuiz
             AnimateConfirmOverlayOpen(ExitConfirmBorder);
         }
 
-        private void BtnBackToTitle_Click(object sender, RoutedEventArgs e)
+        private async void BtnBackToTitle_Click(object sender, RoutedEventArgs e)
         {
             // Stop all sounds
             _soundService.StopAll();
             
             // Disconnect SignalR client
-            _ = _signalRClient.DisconnectAsync();
+            await _signalRClient.DisconnectAsync();
             
             var myName = _profileService.PlayerName ?? TxtJoinPlayerName.Text.Trim();
             
@@ -238,8 +238,10 @@ namespace Kuiz
             }
             else
             {
-                // Client returns to title (can't return to host panel)
-                ShowPanel(TitlePanel);
+                // A client remains in the SignalR lobby between games.
+                ShowPanel(HostPanel);
+                SetClientLobbyMode();
+                UpdateLobbyUi();
             }
         }
 
@@ -356,6 +358,7 @@ namespace Kuiz
 
         private void HideAllOverlays()
         {
+            HideAnsweringModal();
             LeaveConfirmOverlay.Visibility = Visibility.Collapsed;
             LeaveConfirmOverlay.IsHitTestVisible = false;
             ResultOverlay.Visibility = Visibility.Collapsed;
@@ -440,7 +443,7 @@ namespace Kuiz
             await _signalRClient.DisconnectAsync();
 
             // Show loading overlay
-            TxtLoadingMessage.Text = "ƒƒr[‚©‚ç‘Şo’†...";
+            TxtLoadingMessage.Text = "ãƒ­ãƒ“ãƒ¼ã‹ã‚‰é€€å‡ºä¸­...";
             LoadingOverlay.Visibility = Visibility.Visible;
             LoadingOverlay.IsHitTestVisible = true;
             
@@ -465,7 +468,7 @@ namespace Kuiz
             if (_isHost)
             {
                 Logger.LogInfo("Stopping host service...");
-                TxtLoadingMessage.Text = "ƒzƒXƒgƒT[ƒrƒX’â~’†...";
+                TxtLoadingMessage.Text = "ãƒ›ã‚¹ãƒˆã‚µãƒ¼ãƒ“ã‚¹åœæ­¢ä¸­...";
                 await Task.Delay(50); // Allow UI update
                 
                 try
@@ -486,7 +489,7 @@ namespace Kuiz
                 Logger.LogInfo("Reset lobby code display");
             }
             
-            TxtLoadingMessage.Text = "Š®—¹";
+            TxtLoadingMessage.Text = "å®Œäº†";
             await Task.Delay(500); // Show completion message
             
             Logger.LogInfo("Hiding loading overlay and transitioning to TitlePanel...");
@@ -512,7 +515,7 @@ namespace Kuiz
 
         private void BtnInfo_Click(object sender, RoutedEventArgs e)
         {
-            // ƒo[ƒWƒ‡ƒ“î•ñ‚ğ AppVersion.cs ‚©‚çæ“¾‚µ‚Ä•\¦
+            // ãƒãƒ¼ã‚¸ãƒ§ãƒ³æƒ…å ±ã‚’ AppVersion.cs ã‹ã‚‰å–å¾—ã—ã¦è¡¨ç¤º
             TxtInfoVersion.Text = $"v{AppVersion.Version}";
             
             InfoOverlay.Visibility = Visibility.Visible;

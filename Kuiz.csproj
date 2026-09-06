@@ -6,7 +6,7 @@
   <Nullable>enable</Nullable>
   <ImplicitUsings>enable</ImplicitUsings>
   <UseWPF>true</UseWPF>
-  <DefaultItemExcludes>$(DefaultItemExcludes);KuizServer\**;KuizHostBot\**</DefaultItemExcludes>
+  <DefaultItemExcludes>$(DefaultItemExcludes);KuizServer\**;KuizHostBot\**;Tools\**</DefaultItemExcludes>
   <ApplicationIcon>Resources\icon\icon.ico</ApplicationIcon>
 </PropertyGroup>
 

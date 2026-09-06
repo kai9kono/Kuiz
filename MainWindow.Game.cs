@@ -14,7 +14,7 @@ using Kuiz.Services;
 namespace Kuiz
 {
     /// <summary>
-    /// ÉQÅ[ÉÄä÷òAÇÃUIèàóù
+    /// „Ç≤„Éº„É†Èñ¢ÈÄ£„ÅÆUIÂá¶ÁêÜ
     /// </summary>
     public partial class MainWindow
     {
@@ -45,6 +45,7 @@ namespace Kuiz
         {
             try
             {
+                if (_gameEnded || _endingGame || GamePanel.Visibility != Visibility.Visible) return;
                 if (_isPreDisplay)
                 {
                     TxtGameStatus.Text = "Please wait...";
@@ -81,22 +82,22 @@ namespace Kuiz
         {
             if (_gameState.PausedForBuzz || _gameState.BuzzOrder.Count > 0)
             {
-                TxtGameStatus.Text = "âÒìöíÜÇ≈Ç∑";
+                TxtGameStatus.Text = "ÂõûÁ≠î‰∏≠„Åß„Åô";
                 return;
             }
 
             if (_gameState.AttemptedThisQuestion.Contains(name))
             {
-                TxtGameStatus.Text = "Ç±ÇÃñ‚ëËÇ≈ÇÕä˘Ç…âÒìöçœÇ›Ç≈Ç∑";
+                TxtGameStatus.Text = "„Åì„ÅÆÂïèÈ°å„Åß„ÅØÊó¢„Å´ÂõûÁ≠îÊ∏à„Åø„Åß„Åô";
                 return;
             }
 
             _gameState.ProcessBuzz(name);
             
             // Show answering badge
-            TxtAnsweringBadge.Text = $"âÒìöíÜ: {name}";
+            TxtAnsweringBadge.Text = $"ÂõûÁ≠î‰∏≠: {name}";
             TxtAnsweringBadge.Visibility = Visibility.Visible;
-            TxtGameStatus.Text = "âÒìöì¸óÕíÜ...";
+            TxtGameStatus.Text = "ÂõûÁ≠îÂÖ•Âäõ‰∏≠...";
             
             UpdateGameUi();
             
@@ -138,13 +139,13 @@ namespace Kuiz
         {
             if (_gameState.PausedForBuzz || _gameState.BuzzOrder.Count > 0)
             {
-                TxtGameStatus.Text = "âÒìöíÜÇ≈Ç∑";
+                TxtGameStatus.Text = "ÂõûÁ≠î‰∏≠„Åß„Åô";
                 return;
             }
 
             if (_gameState.AttemptedThisQuestion.Contains(name))
             {
-                TxtGameStatus.Text = "Ç±ÇÃñ‚ëËÇ≈ÇÕä˘Ç…âÒìöçœÇ›Ç≈Ç∑";
+                TxtGameStatus.Text = "„Åì„ÅÆÂïèÈ°å„Åß„ÅØÊó¢„Å´ÂõûÁ≠îÊ∏à„Åø„Åß„Åô";
                 return;
             }
 
@@ -153,11 +154,11 @@ namespace Kuiz
                 // Send buzz via SignalR - host will handle the rest
                 await _signalRClient.SendBuzzAsync();
                 Logger.LogInfo("?? Buzz sent via SignalR");
-                TxtGameStatus.Text = "ÉoÉYëóêMíÜ...";
+                TxtGameStatus.Text = "„Éê„Ç∫ÈÄÅ‰ø°‰∏≠...";
             }
             catch (Exception ex)
             {
-                TxtGameStatus.Text = "ÉoÉYÉGÉâÅ[: " + ex.Message;
+                TxtGameStatus.Text = "„Éê„Ç∫„Ç®„É©„Éº: " + ex.Message;
                 Logger.LogError(ex);
             }
         }
@@ -174,7 +175,7 @@ namespace Kuiz
                 
                 Dispatcher.Invoke(() =>
                 {
-                    TxtOverlayStatus.Text = "ê≥âÅI";
+                    TxtOverlayStatus.Text = "Ê≠£Ëß£ÔºÅ";
                     TxtOverlayDetail.Text = string.Empty;
                     ResultOverlay.Visibility = Visibility.Visible;
                     ResultOverlay.IsHitTestVisible = true;
@@ -199,8 +200,8 @@ namespace Kuiz
                 var mistakes = _gameState.Mistakes.GetValueOrDefault(name, 0);
                 Dispatcher.Invoke(() =>
                 {
-                    TxtGameStatus.Text = $"ïsê≥â: {name} (É~ÉXêî: {mistakes})";
-                    TxtOverlayStatus.Text = "ïsê≥â...";
+                    TxtGameStatus.Text = $"‰∏çÊ≠£Ëß£: {name} („Éü„ÇπÊï∞: {mistakes})";
+                    TxtOverlayStatus.Text = "‰∏çÊ≠£Ëß£...";
                     ResultOverlay.Visibility = Visibility.Visible;
                     ResultOverlay.IsHitTestVisible = true;
                     AnimateOverlayOpen(ResultOverlayBorder);
@@ -238,8 +239,8 @@ namespace Kuiz
         {
             Dispatcher.Invoke(() =>
             {
-                TxtOverlayTitle.Text = "ë“ã@íÜ";
-                TxtOverlayInfo.Text = $"{answeringPlayer} Ç™âÒìöíÜ...";
+                TxtOverlayTitle.Text = "ÂæÖÊ©ü‰∏≠";
+                TxtOverlayInfo.Text = $"{answeringPlayer} „ÅåÂõûÁ≠î‰∏≠...";
                 TxtOverlayInfo.Visibility = Visibility.Visible;
                 TxtOverlayAnswer.Visibility = Visibility.Collapsed;
                 TxtOverlayTimer.Text = string.Empty;
@@ -273,7 +274,7 @@ namespace Kuiz
                     UpdateGameUi();
 
                     var answerer = _gameState.BuzzOrder.Count > 0 ? _gameState.BuzzOrder[0] : GetCurrentQuestionHolder();
-                    TxtAnsweringBadge.Text = $"âÒìöíÜ: {answerer}";
+                    TxtAnsweringBadge.Text = $"ÂõûÁ≠î‰∏≠: {answerer}";
                     TxtAnsweringBadge.Visibility = Visibility.Visible;
 
                     TxtOverlayInfo.Visibility = Visibility.Collapsed;
@@ -373,7 +374,7 @@ namespace Kuiz
 
         private void TxtOverlayAnswer_KeyDown(object sender, KeyEventArgs e)
         {
-            // ÉNÉâÉCÉAÉìÉgÇÃèÍçáÇÕÉXÉLÉbÉvÅiShowClientAnswerInputAsyncÇ≈ï ìrÉnÉìÉhÉãÅj
+            // „ÇØ„É©„Ç§„Ç¢„É≥„Éà„ÅÆÂ†¥Âêà„ÅØ„Çπ„Ç≠„ÉÉ„ÉóÔºàShowClientAnswerInputAsync„ÅßÂà•ÈÄî„Éè„É≥„Éâ„É´Ôºâ
             if (!_isHost)
             {
                 return;
@@ -404,7 +405,7 @@ namespace Kuiz
                         TxtAnsweringBadge.Visibility = Visibility.Collapsed;
                         
                         // Show incorrect overlay
-                        TxtOverlayStatus.Text = "ïsê≥â...";
+                        TxtOverlayStatus.Text = "‰∏çÊ≠£Ëß£...";
                         TxtOverlayDetail.Text = string.Empty;
                         ResultOverlay.Visibility = Visibility.Visible;
                         ResultOverlay.IsHitTestVisible = true;
@@ -466,7 +467,7 @@ namespace Kuiz
                     var winner = _gameState.GetWinner();
                     Logger.LogInfo($"Play queue exhausted, winner='{winner}'");
                     _revealCts?.Cancel();
-                    ShowResult(winner ?? "No winner");
+                    await FinishGameAsync(winner ?? "No winner");
                     return;
                 }
 
@@ -502,7 +503,7 @@ namespace Kuiz
                 prevWeight = TxtGameQuestion.FontWeight;
                 // Show current question number (incremental)
                 var currentQuestionNum = _gameState.QueuePosition + 1;
-                TxtGameQuestion.Text = $"ëÊ{currentQuestionNum}ñ‚";
+                TxtGameQuestion.Text = $"Á¨¨{currentQuestionNum}Âïè";
                 TxtGameQuestion.TextAlignment = System.Windows.TextAlignment.Center;
                 TxtGameQuestion.FontWeight = FontWeights.Bold;
                 if (BtnGameBuzz != null) BtnGameBuzz.IsEnabled = false;
@@ -631,15 +632,15 @@ namespace Kuiz
                 // Wait for the "next question" timer (5 seconds)
                 await ShowNextTimerAsync(5, ct);
                 
-                // É^ÉCÉ}Å[èIóπéûÇÃç≈èIÉ`ÉFÉbÉN: íNÇ©Ç™âÒìöíÜÇ©ämîF
+                // „Çø„Ç§„Éû„ÉºÁµÇ‰∫ÜÊôÇ„ÅÆÊúÄÁµÇ„ÉÅ„Çß„ÉÉ„ÇØ: Ë™∞„Åã„ÅåÂõûÁ≠î‰∏≠„ÅãÁ¢∫Ë™ç
                 Logger.LogInfo("?? Timer ended - checking if anyone is answering...");
                 
-                // É^ÉCÉ}Å[èIóπíºëOÇ…ÉoÉYÇ≥ÇÍÇΩâ¬î\ê´Ç™Ç†ÇÈÇÃÇ≈ÅAè≠Çµë“Ç¬
+                // „Çø„Ç§„Éû„ÉºÁµÇ‰∫ÜÁõ¥Ââç„Å´„Éê„Ç∫„Åï„Çå„ÅüÂèØËÉΩÊÄß„Åå„ÅÇ„Çã„ÅÆ„Åß„ÄÅÂ∞ë„ÅóÂæÖ„Å§
                 if (_isAnswerDialogOpen || _gameState.PausedForBuzz)
                 {
                     Logger.LogInfo("?? Someone buzzed near timer end - waiting for their answer...");
                     
-                    // âÒìöÉ_ÉCÉAÉçÉOÇ™äÆóπÇ∑ÇÈÇ‹Ç≈ë“ã@ (ç≈ëÂ15ïb)
+                    // ÂõûÁ≠î„ÉÄ„Ç§„Ç¢„É≠„Ç∞„ÅåÂÆå‰∫Ü„Åô„Çã„Åæ„ÅßÂæÖÊ©ü (ÊúÄÂ§ß15Áßí)
                     var waitStartTime = DateTime.UtcNow;
                     var maxWaitTime = TimeSpan.FromSeconds(15);
                     
@@ -660,7 +661,7 @@ namespace Kuiz
                     }
                 }
                 
-                // íNÇ©Ç™ê≥âÇµÇƒÇ¢Ç»Ç¢Ç©ç≈èIämîF
+                // Ë™∞„Åã„ÅåÊ≠£Ëß£„Åó„Å¶„ÅÑ„Å™„ÅÑ„ÅãÊúÄÁµÇÁ¢∫Ë™ç
                 if (!_gameState.CorrectAnswered)
                 {
                     await ShowAnswerRevealAsync(question, ct);
@@ -686,7 +687,7 @@ namespace Kuiz
             {
                 Dispatcher.Invoke(() =>
                 {
-                    TxtOverlayStatus.Text = "ê≥âÅI";
+                    TxtOverlayStatus.Text = "Ê≠£Ëß£ÔºÅ";
                     TxtOverlayDetail.Text = string.Empty;
                     ResultOverlay.Visibility = Visibility.Visible;
                     ResultOverlay.IsHitTestVisible = true;
@@ -702,7 +703,7 @@ namespace Kuiz
 
             Dispatcher.Invoke(() =>
             {
-                TxtAnswerReveal.Text = $"ìöÇ¶ÅF{question.Answer}";
+                TxtAnswerReveal.Text = $"Á≠î„ÅàÔºö{question.Answer}";
                 TxtAnswerReveal.Visibility = Visibility.Visible;
                 UpdateGameUi();
             });
@@ -734,7 +735,7 @@ namespace Kuiz
         {
             Dispatcher.Invoke(() =>
             {
-                TxtAnswerReveal.Text = $"ìöÇ¶ÅF{question.Answer}";
+                TxtAnswerReveal.Text = $"Á≠î„ÅàÔºö{question.Answer}";
                 TxtAnswerReveal.Visibility = Visibility.Visible;
                 UpdateGameUi();
             });
@@ -747,7 +748,7 @@ namespace Kuiz
         {
             if (seconds <= 0) return;
 
-            // É^ÉCÉ}Å[íÜÇ‡ÉoÉYÇÕóLå¯ (É^ÉCÉ}Å[èIóπéûÇ…É`ÉFÉbÉN)
+            // „Çø„Ç§„Éû„Éº‰∏≠„ÇÇ„Éê„Ç∫„ÅØÊúâÂäπ („Çø„Ç§„Éû„ÉºÁµÇ‰∫ÜÊôÇ„Å´„ÉÅ„Çß„ÉÉ„ÇØ)
             Logger.LogInfo("?? Answer reveal timer started (buzzing still allowed)");
 
             const int intervalMs = 30;
@@ -803,8 +804,9 @@ namespace Kuiz
         {
             Dispatcher.Invoke(() =>
             {
+                UpdateAnsweringModal();
                 // Ensure settings from UI (max mistakes) are applied before building player states
-                ApplySettingsFromUi();
+                if (_isHost) ApplySettingsFromUi();
 
                 ListPlayersInGame.ItemsSource = _gameState.GetPlayerStates();
 
@@ -1065,20 +1067,34 @@ namespace Kuiz
                 await ShowAnswerRevealAsync(_gameState.CurrentQuestion, CancellationToken.None);
             }
 
-            // Notify clients that game has ended
-            if (_hostService.IsRunning)
-            {
-                var results = new
-                {
-                    Winner = winner ?? "No winner",
-                    Scores = _gameState.Scores.ToDictionary(kv => kv.Key, kv => kv.Value),
-                    Mistakes = _gameState.Mistakes.ToDictionary(kv => kv.Key, kv => kv.Value)
-                };
-                await _hostService.NotifyGameEndAsync(results);
-            }
-
-            ShowResult(winner ?? "No winner");
+            await FinishGameAsync(winner ?? "No winner");
             return true;
+        }
+
+        private bool _endingGame;
+
+        private async Task FinishGameAsync(string winner)
+        {
+            if (_gameEnded || _endingGame) return;
+            _endingGame = true;
+            _revealCts?.Cancel();
+            try
+            {
+                // Every host termination path must publish the same final state.
+                if (_hostService.IsRunning)
+                {
+                    var results = new
+                    {
+                        Winner = winner,
+                        Scores = _gameState.Scores.ToDictionary(kv => kv.Key, kv => kv.Value),
+                        Mistakes = _gameState.Mistakes.ToDictionary(kv => kv.Key, kv => kv.Value)
+                    };
+                    await _hostService.NotifyGameEndAsync(results);
+                }
+
+                ShowResult(winner);
+            }
+            finally { _endingGame = false; }
         }
 
         private void ResetGameFlow()
@@ -1128,6 +1144,14 @@ namespace Kuiz
         {
             if (_gameEnded) return;
             _gameEnded = true;
+            _clientRevealCts?.Cancel();
+            _gameState.PausedForBuzz = false;
+            _gameState.BuzzOrder.Clear();
+            Dispatcher.Invoke(() =>
+            {
+                HideAllOverlays();
+                HideAnsweringModal();
+            });
 
             // Record win for the current player if they won
             var myName = _profileService.PlayerName;
@@ -1156,7 +1180,7 @@ namespace Kuiz
                 {
                     var first = rankedPlayers[0];
                     TxtWinnerName.Text = first.Name;
-                    TxtWinnerScore.Text = $"{first.Score}É|ÉCÉìÉg";
+                    TxtWinnerScore.Text = $"{first.Score}„Éù„Ç§„É≥„Éà";
                 }
 
                 ListResultPlayers.ItemsSource = rankedPlayers;
@@ -1317,18 +1341,14 @@ namespace Kuiz
 
 
 
-        private void BtnEndGame_Click(object sender, RoutedEventArgs e)
+        private async void BtnEndGame_Click(object sender, RoutedEventArgs e)
         {
-            if (_gameState.Scores.Count == 0)
+            if (!_isHost) return;
+            try
             {
-                ShowPanel(ResultPanel);
-                TxtWinnerName.Text = "No players";
-                TxtWinnerScore.Text = "";
-                return;
+                await FinishGameAsync(_gameState.GetWinner() ?? "No winner");
             }
-
-            var winner = _gameState.GetWinner() ?? "No winner";
-            ShowResult(winner);
+            catch (Exception ex) { Logger.LogError(ex); }
         }
 
         private void StopGameFlow()

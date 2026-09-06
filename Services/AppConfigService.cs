@@ -5,12 +5,12 @@ using System.Text.Json;
 namespace Kuiz.Services
 {
     /// <summary>
-    /// ƒAƒvƒŠƒP[ƒVƒ‡ƒ“İ’è‚ğŠÇ—
+    /// ã‚¢ãƒ—ãƒªã‚±ãƒ¼ã‚·ãƒ§ãƒ³è¨­å®šã‚’ç®¡ç†
     /// </summary>
     public class AppConfigService
     {
         private static readonly string ConfigPath = Path.Combine(
-            Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
+            Kuiz.DebugSession.GetDataRoot(Environment.SpecialFolder.ApplicationData),
             "Kuiz",
             "config.json"
         );
@@ -67,17 +67,17 @@ namespace Kuiz.Services
     public class AppConfig
     {
         /// <summary>
-        /// Railway API‚ÌURLiŒÅ’è: –{”ÔŠÂ‹«j
+        /// Railway APIã®URLï¼ˆå›ºå®š: æœ¬ç•ªç’°å¢ƒï¼‰
         /// </summary>
         public string ApiUrl { get; set; } = "https://kuiz-server.onrender.com/api/question";
 
         /// <summary>
-        /// ƒQ[ƒ€ƒT[ƒo[‚Ìƒx[ƒXURLiŒÅ’è: Railway–{”ÔŠÂ‹«j
+        /// ã‚²ãƒ¼ãƒ ã‚µãƒ¼ãƒãƒ¼ã®ãƒ™ãƒ¼ã‚¹URLï¼ˆå›ºå®š: Railwayæœ¬ç•ªç’°å¢ƒï¼‰
         /// </summary>
         public string ServerUrl { get; set; } = "https://kuiz-server.onrender.com";
 
         /// <summary>
-        /// ƒfƒoƒbƒOƒ‚[ƒh
+        /// ãƒ‡ãƒãƒƒã‚°ãƒ¢ãƒ¼ãƒ‰
         /// </summary>
         public bool IsDebugMode { get; set; } = false;
     }

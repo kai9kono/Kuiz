@@ -252,6 +252,7 @@ namespace Kuiz
             {
                 Dispatcher.Invoke(async () =>
                 {
+                    if (_gameEnded) return;
                     Logger.LogInfo($"🔔 Player buzzed: {playerName}");
                     
                     var myName = _profileService.PlayerName ?? TxtJoinPlayerName.Text.Trim();
@@ -328,12 +329,26 @@ namespace Kuiz
                 await Dispatcher.InvokeAsync(async () =>
                 {
                     Logger.LogInfo("🎮 Game starting!");
+
+                    // The connection and lobby stay alive between rounds. Clear
+                    // only the local game state so this client can buzz again.
+                    _gameEnded = false;
+                    _isClientAnswering = false;
+                    _isAnswerDialogOpen = false;
+                    _isPreDisplay = false;
+                    _clientRevealCts?.Cancel();
+                    _gameState.ResetQuestionState();
+                    _gameState.BuzzOrder.Clear();
+                    _gameState.AttemptedThisQuestion.Clear();
+                    _gameState.PausedForBuzz = false;
+                    HideAllOverlays();
                     
                     // Parse game settings
                     try
                     {
                         var settingsJson = System.Text.Json.JsonSerializer.Serialize(settings);
-                        var gameSettings = System.Text.Json.JsonSerializer.Deserialize<GameSettings>(settingsJson);
+                        var gameSettings = System.Text.Json.JsonSerializer.Deserialize<GameSettings>(settingsJson,
+                            new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
                         
                         if (gameSettings != null)
                         {
@@ -422,6 +437,13 @@ namespace Kuiz
                         
                         if (gameResults != null)
                         {
+                            if (gameResults.TryGetValue("mistakes", out var mistakes) ||
+                                gameResults.TryGetValue("Mistakes", out mistakes))
+                            {
+                                _gameState.Mistakes.Clear();
+                                foreach (var item in mistakes.EnumerateObject())
+                                    _gameState.Mistakes[item.Name] = item.Value.GetInt32();
+                            }
                             // Try both "Scores" and "scores" (case sensitivity)
                             if (gameResults.ContainsKey("Scores"))
                             {
@@ -459,7 +481,6 @@ namespace Kuiz
                         _clientRevealCts?.Cancel();
                         
                         // Show result screen
-                        _gameEnded = true;
                         ShowResult(winner);
                     }
                     catch (Exception ex)
@@ -468,7 +489,6 @@ namespace Kuiz
                         Logger.LogError(ex);
                         
                         // Show result screen anyway
-                        _gameEnded = true;
                         ShowResult("Game Over");
                     }
                 });
@@ -479,6 +499,8 @@ namespace Kuiz
             {
                 Dispatcher.Invoke(async () =>
                 {
+                    if (_gameEnded) return;
+                    HideAnsweringModal();
                     Logger.LogInfo($"📋 Answer result: {playerName} - {(isCorrect ? "正解" : "不正解")}");
                     
                     // Hide answering badge
@@ -529,6 +551,8 @@ namespace Kuiz
             {
                 Dispatcher.Invoke(async () =>
                 {
+                    if (_gameEnded) return;
+                    HideAnsweringModal();
                     Logger.LogInfo("📋 Next question notification received");
                     
                     // Reset question state for client

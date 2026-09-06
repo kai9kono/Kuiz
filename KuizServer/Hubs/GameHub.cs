@@ -85,6 +85,6 @@ public class GameHub : Hub
             throw new HubException("Only the lobby host can perform this action.");
         }
 
-        return Clients.Group(GetLobbyCode()).SendAsync(method, arguments);
+        return Clients.Group(GetLobbyCode()).SendCoreAsync(method, arguments);
     }
 }

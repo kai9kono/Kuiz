@@ -8,12 +8,12 @@ using Kuiz.Models;
 namespace Kuiz.Services
 {
     /// <summary>
-    /// o‘è—š—ğ‚Ì•Û‘¶E“Ç‚İ‚İ‚ğ’S“–
+    /// å‡ºé¡Œå±¥æ­´ã®ä¿å­˜ãƒ»èª­ã¿è¾¼ã¿ã‚’æ‹…å½“
     /// </summary>
     public class QuestionHistoryService
     {
         private static readonly string HistoryFilePath = Path.Combine(
-            Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+            Kuiz.DebugSession.GetDataRoot(Environment.SpecialFolder.LocalApplicationData),
             "Kuiz",
             "question_history.json"
         );
@@ -71,7 +71,7 @@ namespace Kuiz.Services
                 PlayedAt = DateTime.Now
             };
 
-            History.Insert(0, entry); // ÅV‚ğæ“ª‚É
+            History.Insert(0, entry); // æœ€æ–°ã‚’å…ˆé ­ã«
             await SaveAsync();
         }
 
