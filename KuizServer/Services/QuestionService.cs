@@ -11,41 +11,52 @@ public class QuestionService
 
     public QuestionService(IConfiguration configuration)
     {
-        // RailwayのPostgreSQL接続文字列を環境変数から取得
         var databaseUrl = Environment.GetEnvironmentVariable("DATABASE_URL");
-        
-        Console.WriteLine("===========================================");
-        Console.WriteLine("?? QuestionService Constructor");
-        Console.WriteLine($"   DATABASE_URL env var: {(string.IsNullOrEmpty(databaseUrl) ? "NOT SET" : "SET")}");
-        Console.WriteLine($"   DATABASE_URL value: {databaseUrl}");
-        Console.WriteLine("===========================================");
-        
-        if (!string.IsNullOrEmpty(databaseUrl))
+        var configuredConnectionString = configuration.GetConnectionString("DefaultConnection");
+
+        if (!string.IsNullOrWhiteSpace(databaseUrl))
         {
-            // RailwayのDATABASE_URLフォーマット: postgres://user:password@host:port/database
-            // Npgsqlフォーマットに変換: Host=host;Port=port;Database=database;Username=user;Password=password
-            try
-            {
-                var uri = new Uri(databaseUrl);
-                var userInfo = uri.UserInfo.Split(':');
-                _connectionString = $"Host={uri.Host};Port={uri.Port};Database={uri.LocalPath.TrimStart('/')};Username={userInfo[0]};Password={userInfo[1]};SSL Mode=Require;Trust Server Certificate=true";
-                Console.WriteLine($"?? Using Railway DATABASE_URL: Host={uri.Host}, Database={uri.LocalPath.TrimStart('/')}");
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"?? Failed to parse DATABASE_URL: {ex.Message}");
-                _connectionString = configuration.GetConnectionString("DefaultConnection")
-                    ?? "Host=localhost;Port=5432;Database=kuiz;Username=postgres;Password=postgres";
-            }
+            _connectionString = ConvertDatabaseUrl(databaseUrl);
+            Console.WriteLine("Using DATABASE_URL PostgreSQL connection.");
+        }
+        else if (!string.IsNullOrWhiteSpace(configuredConnectionString))
+        {
+            _connectionString = configuredConnectionString;
+            Console.WriteLine("Using configured PostgreSQL connection string.");
         }
         else
         {
-            _connectionString = configuration.GetConnectionString("DefaultConnection")
-                ?? "Host=localhost;Port=5432;Database=kuiz;Username=postgres;Password=postgres";
-            Console.WriteLine("?? Using local database connection");
+            _connectionString = "Host=localhost;Port=5432;Database=kuiz;Username=postgres;Password=postgres";
+            Console.WriteLine("Using local PostgreSQL connection.");
         }
     }
 
+    private static string ConvertDatabaseUrl(string databaseUrl)
+    {
+        var uri = new Uri(databaseUrl);
+        if (uri.Scheme is not ("postgres" or "postgresql"))
+        {
+            throw new ArgumentException("DATABASE_URL must use the postgres or postgresql scheme.", nameof(databaseUrl));
+        }
+
+        var separatorIndex = uri.UserInfo.IndexOf(':');
+        if (separatorIndex < 1)
+        {
+            throw new ArgumentException("DATABASE_URL must include a username and password.", nameof(databaseUrl));
+        }
+
+        var builder = new NpgsqlConnectionStringBuilder
+        {
+            Host = uri.Host,
+            Port = uri.IsDefaultPort ? 5432 : uri.Port,
+            Database = Uri.UnescapeDataString(uri.AbsolutePath.TrimStart('/')),
+            Username = Uri.UnescapeDataString(uri.UserInfo[..separatorIndex]),
+            Password = Uri.UnescapeDataString(uri.UserInfo[(separatorIndex + 1)..]),
+            SslMode = SslMode.Require
+        };
+
+        return builder.ConnectionString;
+    }
 
 
     public async Task<List<Question>> GetAllQuestionsAsync()

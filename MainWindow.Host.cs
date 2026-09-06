@@ -505,10 +505,8 @@ namespace Kuiz
                     ColorBrush = _gameState.EnsurePlayerColor(p)
                 }).ToList();
                 
-                if (_isHost)
-                {
-                    UpdatePlayerCountDisplay();
-                }
+                // Update player count for both host and client
+                UpdatePlayerCountDisplay();
             });
         }
 

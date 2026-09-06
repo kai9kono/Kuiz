@@ -6,36 +6,18 @@ namespace KuizServer.Hubs;
 public class GameHub : Hub
 {
     private readonly LobbyService _lobbyService;
-    private readonly GameRoomService _gameRoomService;
 
-    public GameHub(LobbyService lobbyService, GameRoomService gameRoomService)
+    public GameHub(LobbyService lobbyService)
     {
         _lobbyService = lobbyService;
-        _gameRoomService = gameRoomService;
-    }
-
-    public override async Task OnConnectedAsync()
-    {
-        await base.OnConnectedAsync();
     }
 
     public override async Task OnDisconnectedAsync(Exception? exception)
     {
-        // Handle player disconnection
-        var playerName = _lobbyService.GetPlayerByConnectionId(Context.ConnectionId);
-        if (!string.IsNullOrEmpty(playerName))
-        {
-            var lobbyCode = _lobbyService.GetLobbyByPlayer(playerName);
-            if (!string.IsNullOrEmpty(lobbyCode))
-            {
-                await LeaveLobby(lobbyCode, playerName);
-            }
-        }
-        
+        await LeaveCurrentLobbyAsync();
         await base.OnDisconnectedAsync(exception);
     }
 
-    // Lobby management
     public async Task<string> CreateLobby(string hostName)
     {
         var lobbyCode = _lobbyService.CreateLobby(hostName, Context.ConnectionId);
@@ -45,73 +27,64 @@ public class GameHub : Hub
 
     public async Task<bool> JoinLobby(string lobbyCode, string playerName)
     {
-        Console.WriteLine($"[GameHub] JoinLobby called: Code={lobbyCode}, Player={playerName}, ConnectionId={Context.ConnectionId}");
-        
-        var success = _lobbyService.JoinLobby(lobbyCode, playerName, Context.ConnectionId);
-        
-        Console.WriteLine($"[GameHub] JoinLobby result: {success}");
-        
-        if (success)
+        if (!_lobbyService.JoinLobby(lobbyCode, playerName, Context.ConnectionId))
         {
-            await Groups.AddToGroupAsync(Context.ConnectionId, lobbyCode);
-            Console.WriteLine($"[GameHub] Player {playerName} added to group {lobbyCode}");
-            
-            await Clients.Group(lobbyCode).SendAsync("PlayerJoined", playerName);
-            Console.WriteLine($"[GameHub] Sent PlayerJoined event to group {lobbyCode}");
+            return false;
         }
-        else
+
+        var assignedLobbyCode = GetLobbyCode();
+        var assignedPlayerName = GetPlayerName();
+        await Groups.AddToGroupAsync(Context.ConnectionId, assignedLobbyCode);
+        await Clients.Group(assignedLobbyCode).SendAsync("PlayerJoined", assignedPlayerName);
+        return true;
+    }
+
+    public Task LeaveLobby() => LeaveCurrentLobbyAsync();
+
+    public object GetLobbyState() => _lobbyService.GetLobbyState(Context.ConnectionId);
+
+    public Task StartGame(object gameSettings) => SendToLobbyAsHost("GameStarting", gameSettings);
+
+    public Task SendBuzz() => Clients.Group(GetLobbyCode()).SendAsync("PlayerBuzzed", GetPlayerName());
+
+    public Task SendAnswer(string answer) => Clients.Group(GetLobbyCode()).SendAsync("PlayerAnswered", GetPlayerName(), answer);
+
+    public Task UpdateGameState(object gameState) => SendToLobbyAsHost("GameStateUpdated", gameState);
+
+    public Task EndGame(object results) => SendToLobbyAsHost("GameEnded", results);
+
+    public Task SendAnswerResult(string playerName, bool isCorrect) =>
+        SendToLobbyAsHost("AnswerResult", playerName, isCorrect);
+
+    public Task SendNextQuestion() => SendToLobbyAsHost("NextQuestion");
+
+    private async Task LeaveCurrentLobbyAsync()
+    {
+        var departure = _lobbyService.LeaveLobby(Context.ConnectionId);
+        if (departure is null)
         {
-            Console.WriteLine($"[GameHub] Failed to join lobby: Code={lobbyCode}, Player={playerName}");
+            return;
         }
-        
-        return success;
+
+        await Groups.RemoveFromGroupAsync(Context.ConnectionId, departure.LobbyCode);
+        await Clients.Group(departure.LobbyCode).SendAsync("PlayerLeft", departure.PlayerName);
     }
 
-    public async Task LeaveLobby(string lobbyCode, string playerName)
-    {
-        _lobbyService.LeaveLobby(lobbyCode, playerName);
-        await Groups.RemoveFromGroupAsync(Context.ConnectionId, lobbyCode);
-        await Clients.Group(lobbyCode).SendAsync("PlayerLeft", playerName);
-    }
+    private string GetLobbyCode() =>
+        _lobbyService.GetLobbyByConnectionId(Context.ConnectionId)
+        ?? throw new HubException("Join a lobby before sending game events.");
 
-    public async Task<object> GetLobbyState(string lobbyCode)
-    {
-        return _lobbyService.GetLobbyState(lobbyCode);
-    }
+    private string GetPlayerName() =>
+        _lobbyService.GetPlayerByConnectionId(Context.ConnectionId)
+        ?? throw new HubException("Join a lobby before sending game events.");
 
-    // Game management
-    public async Task StartGame(string lobbyCode, object gameSettings)
+    private Task SendToLobbyAsHost(string method, params object?[] arguments)
     {
-        await Clients.Group(lobbyCode).SendAsync("GameStarting", gameSettings);
-    }
+        if (!_lobbyService.IsHost(Context.ConnectionId))
+        {
+            throw new HubException("Only the lobby host can perform this action.");
+        }
 
-    public async Task SendBuzz(string lobbyCode, string playerName)
-    {
-        await Clients.Group(lobbyCode).SendAsync("PlayerBuzzed", playerName);
-    }
-
-    public async Task SendAnswer(string lobbyCode, string playerName, string answer)
-    {
-        await Clients.Group(lobbyCode).SendAsync("PlayerAnswered", playerName, answer);
-    }
-
-    public async Task UpdateGameState(string lobbyCode, object gameState)
-    {
-        await Clients.Group(lobbyCode).SendAsync("GameStateUpdated", gameState);
-    }
-
-    public async Task EndGame(string lobbyCode, object results)
-    {
-        await Clients.Group(lobbyCode).SendAsync("GameEnded", results);
-    }
-
-    public async Task SendAnswerResult(string lobbyCode, string playerName, bool isCorrect)
-    {
-        await Clients.Group(lobbyCode).SendAsync("AnswerResult", playerName, isCorrect);
-    }
-
-    public async Task SendNextQuestion(string lobbyCode)
-    {
-        await Clients.Group(lobbyCode).SendAsync("NextQuestion");
+        return Clients.Group(GetLobbyCode()).SendAsync(method, arguments);
     }
 }

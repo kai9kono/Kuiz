@@ -6,7 +6,7 @@
   <Nullable>enable</Nullable>
   <ImplicitUsings>enable</ImplicitUsings>
   <UseWPF>true</UseWPF>
-  <DefaultItemExcludes>$(DefaultItemExcludes);KuizServer\**</DefaultItemExcludes>
+  <DefaultItemExcludes>$(DefaultItemExcludes);KuizServer\**;KuizHostBot\**</DefaultItemExcludes>
   <ApplicationIcon>Resources\icon\icon.ico</ApplicationIcon>
 </PropertyGroup>
 
@@ -23,15 +23,23 @@
   <None Remove="Resources\sound\question.mp3" />
 </ItemGroup>
 
-<ItemGroup>
-  <Compile Remove="KuizServer\**" />
-  <EmbeddedResource Remove="KuizServer\**" />
-  <Page Remove="KuizServer\**" />
-  <None Remove="KuizServer\**" />
-</ItemGroup>
+  <ItemGroup>
+    <Compile Remove="KuizServer\**" />
+    <EmbeddedResource Remove="KuizServer\**" />
+    <Page Remove="KuizServer\**" />
+    <None Remove="KuizServer\**" />
+    <Compile Remove="KuizHostBot\**" />
+    <EmbeddedResource Remove="KuizHostBot\**" />
+    <Page Remove="KuizHostBot\**" />
+    <None Remove="KuizHostBot\**" />
+  </ItemGroup>
 
 <ItemGroup>
   <Content Include="Resources\icon\icon.ico" />
+</ItemGroup>
+
+<ItemGroup>
+  <None Include="KuizHostBot\KuizHostBot.csproj" />
 </ItemGroup>
 
   <ItemGroup>

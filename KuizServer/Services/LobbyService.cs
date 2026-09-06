@@ -4,140 +4,172 @@ namespace KuizServer.Services;
 
 public class LobbyService
 {
-    private readonly ConcurrentDictionary<string, Lobby> _lobbies = new();
-    private readonly ConcurrentDictionary<string, string> _playerToLobby = new();
-    private readonly ConcurrentDictionary<string, string> _connectionToPlayer = new();
     private const int MaxPlayersPerLobby = 4;
+    private readonly ConcurrentDictionary<string, Lobby> _lobbies = new();
+    private readonly ConcurrentDictionary<string, LobbyMembership> _memberships = new();
+    private readonly object _membershipLock = new();
 
     public string CreateLobby(string hostName, string connectionId)
     {
-        var lobbyCode = GenerateLobbyCode();
-        var lobby = new Lobby
+        var normalizedName = NormalizePlayerName(hostName);
+        lock (_membershipLock)
         {
-            Code = lobbyCode,
-            HostName = hostName,
-            Players = new List<Player> { new Player { Name = hostName, ConnectionId = connectionId } },
-            CreatedAt = DateTime.UtcNow
-        };
+            if (_memberships.ContainsKey(connectionId))
+            {
+                throw new InvalidOperationException("This connection already belongs to a lobby.");
+            }
 
-        _lobbies[lobbyCode] = lobby;
-        _playerToLobby[hostName] = lobbyCode;
-        _connectionToPlayer[connectionId] = hostName;
+            string lobbyCode;
+            do
+            {
+                lobbyCode = GenerateLobbyCode();
+            } while (!_lobbies.TryAdd(lobbyCode, new Lobby
+            {
+                Code = lobbyCode,
+                HostConnectionId = connectionId,
+                HostName = normalizedName,
+                Players = [new Player { Name = normalizedName, ConnectionId = connectionId }],
+                CreatedAt = DateTime.UtcNow
+            }));
 
-        return lobbyCode;
+            _memberships[connectionId] = new LobbyMembership(lobbyCode, normalizedName);
+            return lobbyCode;
+        }
     }
 
     public bool JoinLobby(string lobbyCode, string playerName, string connectionId)
     {
-        Console.WriteLine($"[LobbyService] JoinLobby: Code={lobbyCode}, Player={playerName}");
-        
-        if (!_lobbies.TryGetValue(lobbyCode, out var lobby))
+        var normalizedCode = lobbyCode.Trim().ToUpperInvariant();
+        var normalizedName = NormalizePlayerName(playerName);
+
+        lock (_membershipLock)
         {
-            Console.WriteLine($"[LobbyService] Lobby not found: {lobbyCode}");
-            Console.WriteLine($"[LobbyService] Available lobbies: {string.Join(", ", _lobbies.Keys)}");
-            return false;
-        }
-
-        if (lobby.Players.Count >= MaxPlayersPerLobby)
-        {
-            Console.WriteLine($"[LobbyService] Lobby full: {lobbyCode}");
-            return false;
-        }
-
-        if (lobby.Players.Any(p => p.Name == playerName))
-        {
-            Console.WriteLine($"[LobbyService] Player already in lobby: {playerName}");
-            return false;
-        }
-
-        lobby.Players.Add(new Player { Name = playerName, ConnectionId = connectionId });
-        _playerToLobby[playerName] = lobbyCode;
-        _connectionToPlayer[connectionId] = playerName;
-
-        Console.WriteLine($"[LobbyService] Player {playerName} joined lobby {lobbyCode}. Total players: {lobby.Players.Count}");
-        return true;
-    }
-
-    public void LeaveLobby(string lobbyCode, string playerName)
-    {
-        if (!_lobbies.TryGetValue(lobbyCode, out var lobby))
-            return;
-
-        var player = lobby.Players.FirstOrDefault(p => p.Name == playerName);
-        if (player != null)
-        {
-            lobby.Players.Remove(player);
-            _playerToLobby.TryRemove(playerName, out _);
-            _connectionToPlayer.TryRemove(player.ConnectionId, out _);
-
-            // Remove lobby if empty or host left
-            if (lobby.Players.Count == 0 || playerName == lobby.HostName)
+            if (_memberships.ContainsKey(connectionId) || !_lobbies.TryGetValue(normalizedCode, out var lobby))
             {
-                _lobbies.TryRemove(lobbyCode, out _);
-                foreach (var p in lobby.Players)
+                return false;
+            }
+
+            lock (lobby.SyncRoot)
+            {
+                if (lobby.Players.Count >= MaxPlayersPerLobby ||
+                    lobby.Players.Any(player => string.Equals(player.Name, normalizedName, StringComparison.OrdinalIgnoreCase)))
                 {
-                    _playerToLobby.TryRemove(p.Name, out _);
-                    _connectionToPlayer.TryRemove(p.ConnectionId, out _);
+                    return false;
                 }
+
+                lobby.Players.Add(new Player { Name = normalizedName, ConnectionId = connectionId });
+                _memberships[connectionId] = new LobbyMembership(normalizedCode, normalizedName);
+                return true;
             }
         }
     }
 
-    public object GetLobbyState(string lobbyCode)
+    public LobbyDeparture? LeaveLobby(string connectionId)
     {
-        if (!_lobbies.TryGetValue(lobbyCode, out var lobby))
+        lock (_membershipLock)
+        {
+            if (!_memberships.TryRemove(connectionId, out var membership) ||
+                !_lobbies.TryGetValue(membership.LobbyCode, out var lobby))
+            {
+                return null;
+            }
+
+            lock (lobby.SyncRoot)
+            {
+                var player = lobby.Players.FirstOrDefault(item => item.ConnectionId == connectionId);
+                if (player is null)
+                {
+                    return null;
+                }
+
+                lobby.Players.Remove(player);
+                var lobbyClosed = connectionId == lobby.HostConnectionId || lobby.Players.Count == 0;
+                if (lobbyClosed)
+                {
+                    _lobbies.TryRemove(membership.LobbyCode, out _);
+                    foreach (var remaining in lobby.Players)
+                    {
+                        _memberships.TryRemove(remaining.ConnectionId, out _);
+                    }
+                }
+
+                return new LobbyDeparture(membership.LobbyCode, player.Name, lobbyClosed);
+            }
+        }
+    }
+
+    public object GetLobbyState(string connectionId)
+    {
+        if (!_memberships.TryGetValue(connectionId, out var membership) ||
+            !_lobbies.TryGetValue(membership.LobbyCode, out var lobby))
+        {
             return new { exists = false };
+        }
 
-        return new
+        lock (lobby.SyncRoot)
         {
-            exists = true,
-            code = lobby.Code,
-            host = lobby.HostName,
-            players = lobby.Players.Select(p => p.Name).ToList(),
-            playerCount = lobby.Players.Count,
-            maxPlayers = MaxPlayersPerLobby
-        };
+            return new
+            {
+                exists = true,
+                code = lobby.Code,
+                host = lobby.HostName,
+                players = lobby.Players.Select(player => player.Name).ToList(),
+                playerCount = lobby.Players.Count,
+                maxPlayers = MaxPlayersPerLobby
+            };
+        }
     }
 
-    public string? GetPlayerByConnectionId(string connectionId)
-    {
-        _connectionToPlayer.TryGetValue(connectionId, out var playerName);
-        return playerName;
-    }
+    public string? GetLobbyByConnectionId(string connectionId) =>
+        _memberships.TryGetValue(connectionId, out var membership) ? membership.LobbyCode : null;
 
-    public string? GetLobbyByPlayer(string playerName)
-    {
-        _playerToLobby.TryGetValue(playerName, out var lobbyCode);
-        return lobbyCode;
-    }
+    public string? GetPlayerByConnectionId(string connectionId) =>
+        _memberships.TryGetValue(connectionId, out var membership) ? membership.PlayerName : null;
 
-    private string GenerateLobbyCode()
+    public bool IsHost(string connectionId) =>
+        _memberships.TryGetValue(connectionId, out var membership) &&
+        _lobbies.TryGetValue(membership.LobbyCode, out var lobby) &&
+        lobby.HostConnectionId == connectionId;
+
+    private static string NormalizePlayerName(string playerName)
     {
-        const string chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
-        var random = new Random();
-        string code;
-        
-        do
+        var normalized = playerName.Trim();
+        if (string.IsNullOrWhiteSpace(normalized) || normalized.Length > 32)
         {
-            code = new string(Enumerable.Range(0, 6)
-                .Select(_ => chars[random.Next(chars.Length)])
-                .ToArray());
-        } while (_lobbies.ContainsKey(code));
+            throw new ArgumentException("Player name must contain 1 to 32 characters.", nameof(playerName));
+        }
 
-        return code;
+        return normalized;
+    }
+
+    private static string GenerateLobbyCode()
+    {
+        const string characters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+        return string.Create(6, characters, static (span, source) =>
+        {
+            for (var index = 0; index < span.Length; index++)
+            {
+                span[index] = source[Random.Shared.Next(source.Length)];
+            }
+        });
     }
 }
 
-public class Lobby
+public sealed class Lobby
 {
-    public required string Code { get; set; }
-    public required string HostName { get; set; }
-    public required List<Player> Players { get; set; }
-    public DateTime CreatedAt { get; set; }
+    public required string Code { get; init; }
+    public required string HostName { get; init; }
+    public required string HostConnectionId { get; init; }
+    public required List<Player> Players { get; init; }
+    public DateTime CreatedAt { get; init; }
+    public object SyncRoot { get; } = new();
 }
 
-public class Player
+public sealed class Player
 {
-    public required string Name { get; set; }
-    public required string ConnectionId { get; set; }
+    public required string Name { get; init; }
+    public required string ConnectionId { get; init; }
 }
+
+public sealed record LobbyMembership(string LobbyCode, string PlayerName);
+public sealed record LobbyDeparture(string LobbyCode, string PlayerName, bool LobbyClosed);

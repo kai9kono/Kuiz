@@ -198,6 +198,8 @@ namespace Kuiz.Services
                 CorrectAnswered = true;
                 LastCorrectPlayer = playerName;
                 FastReveal = true;
+                BuzzOrder.Clear();
+                PausedForBuzz = false;
             }
             else
             {

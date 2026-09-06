@@ -148,7 +148,7 @@ namespace Kuiz.Services
         {
             if (_connection != null && _connection.State == HubConnectionState.Connected)
             {
-                await _connection.InvokeAsync("SendBuzz", _lobbyCode, _playerName);
+                await _connection.InvokeAsync("SendBuzz");
             }
         }
 
@@ -156,7 +156,7 @@ namespace Kuiz.Services
         {
             if (_connection != null && _connection.State == HubConnectionState.Connected)
             {
-                await _connection.InvokeAsync("SendAnswer", _lobbyCode, _playerName, answer);
+                await _connection.InvokeAsync("SendAnswer", answer);
             }
         }
 
@@ -164,7 +164,7 @@ namespace Kuiz.Services
         {
             if (_connection != null && _connection.State == HubConnectionState.Connected)
             {
-                return await _connection.InvokeAsync<object>("GetLobbyState", _lobbyCode);
+                return await _connection.InvokeAsync<object>("GetLobbyState");
             }
             return new { Exists = false };
         }
@@ -177,7 +177,7 @@ namespace Kuiz.Services
                 {
                     if (_connection.State == HubConnectionState.Connected)
                     {
-                        await _connection.InvokeAsync("LeaveLobby", _lobbyCode, _playerName);
+                        await _connection.InvokeAsync("LeaveLobby");
                         await _connection.StopAsync();
                     }
                     await _connection.DisposeAsync();

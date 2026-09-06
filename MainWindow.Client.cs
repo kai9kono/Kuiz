@@ -336,22 +336,23 @@ namespace Kuiz
                             _gameState.PointsToWin = gameSettings.PointsToWin;
                             _gameState.MaxMistakes = gameSettings.MaxMistakes;
                             
-                            // Initialize players
+                            // Initialize players first
                             _gameState.LobbyPlayers.Clear();
                             foreach (var player in gameSettings.Players)
                             {
                                 _gameState.AddPlayer(player);
                             }
                             
-                            // Initialize scores
-                            _gameState.Scores.Clear();
+                            // Initialize scores and mistakes (must be after adding players)
+                            _gameState.InitializeScores();
+                            
+                            // Then apply received scores (in case game was resumed)
                             foreach (var kvp in gameSettings.Scores)
                             {
                                 _gameState.Scores[kvp.Key] = kvp.Value;
                             }
                             
-                            // Initialize mistakes
-                            _gameState.Mistakes.Clear();
+                            // Apply received mistakes
                             foreach (var kvp in gameSettings.Mistakes)
                             {
                                 _gameState.Mistakes[kvp.Key] = kvp.Value;
@@ -369,8 +370,6 @@ namespace Kuiz
                             }
                             _clientQuestionIndex = -1;
                             
-                            _gameState.InitializeScores();
-                            
                             Logger.LogInfo($"📋 Game initialized with {gameSettings.Players.Count} players");
                         }
                     }
@@ -385,8 +384,9 @@ namespace Kuiz
                     // Show countdown
                     await ShowGameStartCountdownAsync();
                     
-                    // Switch to game panel
-                    ShowPanel(GamePanel);
+                    // Switch to game panel and wait for transition to complete
+                    HideAllPanels();
+                    GamePanel.Visibility = Visibility.Visible;
                     UpdateGameUi();
                     
                     // Start the first question locally (OnNextQuestion handles subsequent questions)

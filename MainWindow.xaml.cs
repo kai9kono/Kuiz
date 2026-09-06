@@ -1,4 +1,4 @@
-ï»¿using System.ComponentModel;
+using System.ComponentModel;
 using System.Net.Http;
 using System.Windows;
 using System.Windows.Input;
@@ -9,33 +9,34 @@ using MaterialDesignThemes.Wpf;
 namespace Kuiz
 {
     /// <summary>
-    /// MainWindow - ãƒ¡ã‚¤ãƒ³ã‚¦ã‚£ãƒ³ãƒ‰ã‚¦ï¼ˆpartialã‚¯ãƒ©ã‚¹ï¼‰
+    /// MainWindow - ƒƒCƒ“ƒEƒBƒ“ƒhƒEipartialƒNƒ‰ƒXj
     /// 
-    /// é–¢é€£ãƒ•ã‚¡ã‚¤ãƒ«:
-    /// - MainWindow.Game.cs      : ã‚²ãƒ¼ãƒ é–¢é€£UIå‡¦ç†
-    /// - MainWindow.Host.cs      : ãƒ›ã‚¹ãƒˆé–¢é€£UIå‡¦ç†
-    /// - MainWindow.Client.cs    : ã‚¯ãƒ©ã‚¤ã‚¢ãƒ³ãƒˆé–¢é€£UIå‡¦ç†
-    /// - MainWindow.Navigation.cs: ãƒŠãƒ“ã‚²ãƒ¼ã‚·ãƒ§ãƒ³å‡¦ç†
-    /// - MainWindow.Profile.cs   : ãƒ—ãƒ­ãƒ•ã‚£ãƒ¼ãƒ«å‡¦ç†
+    /// ŠÖ˜Aƒtƒ@ƒCƒ‹:
+    /// - MainWindow.Game.cs      : ƒQ[ƒ€ŠÖ˜AUIˆ—
+    /// - MainWindow.Host.cs      : ƒzƒXƒgŠÖ˜AUIˆ—
+    /// - MainWindow.Client.cs    : ƒNƒ‰ƒCƒAƒ“ƒgŠÖ˜AUIˆ—
+    /// - MainWindow.Navigation.cs: ƒiƒrƒQ[ƒVƒ‡ƒ“ˆ—
+    /// - MainWindow.Profile.cs   : ƒvƒƒtƒB[ƒ‹ˆ—
     /// </summary>
     public partial class MainWindow : Window, INotifyPropertyChanged
     {
         // Services
         private readonly ProfileService _profileService = new();
-        private readonly QuestionService _questionService = new();
+        private readonly AppConfigService _appConfig = new();
+        private readonly QuestionService _questionService;
         private readonly GameStateService _gameState = new();
         private readonly SignalRHostService _hostService = new();
         private readonly HttpClient _httpClient = new();
         private readonly ThemeService _themeService = ThemeService.Instance;
         private readonly SoundService _soundService = SoundService.Instance;
         private readonly PlayerStatsService _playerStatsService = new();
-        private readonly AppConfigService _appConfig = new();
-        private readonly SignalRClientService _signalRClient = new();
+                private readonly SignalRClientService _signalRClient = new();
 
         public event PropertyChangedEventHandler? PropertyChanged;
 
         public MainWindow()
         {
+            _questionService = new QuestionService(_appConfig.Config);
             InitializeComponent();
 
             
@@ -47,21 +48,21 @@ namespace Kuiz
 
         private void InitializeServices()
         {
-            // ãƒ­ã‚°ãƒ•ã‚¡ã‚¤ãƒ«ã®å ´æ‰€ã‚’è¨˜éŒ²
+            // ƒƒOƒtƒ@ƒCƒ‹‚ÌêŠ‚ğ‹L˜^
             Logger.LogInfo("===========================================");
-            Logger.LogInfo("ğŸš€ Kuiz Application Starting");
-            Logger.LogInfo($"ğŸ“ Log file: {Logger.GetLogFilePath()}");
-            Logger.LogInfo($"ğŸ“ Log directory: {Logger.GetLogDirectory()}");
+            Logger.LogInfo("?? Kuiz Application Starting");
+            Logger.LogInfo($"?? Log file: {Logger.GetLogFilePath()}");
+            Logger.LogInfo($"?? Log directory: {Logger.GetLogDirectory()}");
             Logger.LogInfo("===========================================");
             
             _profileService.Load();
 
-            // ãƒ—ãƒ¬ã‚¤ãƒ¤ãƒ¼åã‚’ãƒ†ã‚­ã‚¹ãƒˆãƒœãƒƒã‚¯ã‚¹ã«è¨­å®šï¼ˆãƒ‡ãƒ•ã‚©ãƒ«ãƒˆï¼šã¡ã³ã™ã‘æ˜å¤ªå­ï¼‰
-            TxtJoinPlayerName.Text = _profileService.PlayerName ?? "ã¡ã³ã™ã‘æ˜å¤ªå­";
+            // ƒvƒŒƒCƒ„[–¼‚ğƒeƒLƒXƒgƒ{ƒbƒNƒX‚Éİ’èiƒfƒtƒHƒ‹ƒgF‚¿‚Ñ‚·‚¯–¾‘¾qj
+            TxtJoinPlayerName.Text = _profileService.PlayerName ?? "‚¿‚Ñ‚·‚¯–¾‘¾q";
             
             // Load server configuration
             _appConfig.Load();
-            Logger.LogInfo($"ğŸŒ Server URL: {_appConfig.Config.ServerUrl}");
+            Logger.LogInfo($"?? Server URL: {_appConfig.Config.ServerUrl}");
             
             // Apply saved theme using ThemeService
 
@@ -93,7 +94,7 @@ namespace Kuiz
             }
             catch { }
             
-            // APIæ¥ç¶šãƒ†ã‚¹ãƒˆã‚’å®Ÿè¡Œ
+            // APIÚ‘±ƒeƒXƒg‚ğÀs
             _ = TestApiConnectionOnStartup();
         }
         
@@ -104,7 +105,7 @@ namespace Kuiz
             {
                 await Dispatcher.InvokeAsync(() =>
                 {
-                    Logger.LogInfo($"ğŸ“¥ Player registered via SignalR: {playerName}");
+                    Logger.LogInfo($"?? Player registered via SignalR: {playerName}");
                     
                     if (!_gameState.LobbyPlayers.Contains(playerName))
                     {
@@ -120,7 +121,7 @@ namespace Kuiz
             {
                 await Dispatcher.InvokeAsync(async () =>
                 {
-                    Logger.LogInfo($"ğŸ”” Buzz received from: {playerName}");
+                    Logger.LogInfo($"?? Buzz received from: {playerName}");
                     
                     // Check if can buzz
                     if (_gameState.PausedForBuzz || _gameState.BuzzOrder.Count > 0)
@@ -139,15 +140,15 @@ namespace Kuiz
                     _gameState.ProcessBuzz(playerName);
                     
                     // Show answering badge on host
-                    TxtAnsweringBadge.Text = $"å›ç­”ä¸­: {playerName}";
+                    TxtAnsweringBadge.Text = $"‰ñ“š’†: {playerName}";
                     TxtAnsweringBadge.Visibility = Visibility.Visible;
-                    TxtGameStatus.Text = $"{playerName} ãŒå›ç­”ä¸­...";
+                    TxtGameStatus.Text = $"{playerName} ‚ª‰ñ“š’†...";
                     
                     UpdateGameUi();
                     
-                    // NOTE: ã‚µãƒ¼ãƒãƒ¼ãŒæ—¢ã«PlayerBuzzedã‚’ã‚°ãƒ«ãƒ¼ãƒ—å…¨ä½“ã«é€ä¿¡æ¸ˆã¿ãªã®ã§ã€
-                    // ã“ã“ã§å†åº¦NotifyPlayerBuzzedAsyncã‚’å‘¼ã¶ã¨äºŒé‡é€ä¿¡ã«ãªã‚‹
-                    // ã‚¯ãƒ©ã‚¤ã‚¢ãƒ³ãƒˆã®ãƒã‚ºã¯ã‚µãƒ¼ãƒãƒ¼çµŒç”±ã§ç›´æ¥é€šçŸ¥ã•ã‚Œã‚‹ã®ã§ã€ã“ã“ã§ã¯é€šçŸ¥ã—ãªã„
+                    // NOTE: ƒT[ƒo[‚ªŠù‚ÉPlayerBuzzed‚ğƒOƒ‹[ƒv‘S‘Ì‚É‘—MÏ‚İ‚È‚Ì‚ÅA
+                    // ‚±‚±‚ÅÄ“xNotifyPlayerBuzzedAsync‚ğŒÄ‚Ô‚Æ“ñd‘—M‚É‚È‚é
+                    // ƒNƒ‰ƒCƒAƒ“ƒg‚ÌƒoƒY‚ÍƒT[ƒo[Œo—R‚Å’¼Ú’Ê’m‚³‚ê‚é‚Ì‚ÅA‚±‚±‚Å‚Í’Ê’m‚µ‚È‚¢
                     
                     // Update and broadcast game state
                     await BroadcastGameStateAsync();
@@ -160,7 +161,7 @@ namespace Kuiz
             {
                 await Dispatcher.InvokeAsync(async () =>
                 {
-                    Logger.LogInfo($"ğŸ’¬ Answer received from {playerName}: {answer}");
+                    Logger.LogInfo($"?? Answer received from {playerName}: {answer}");
                     
                     // Hide answering badge
                     TxtAnsweringBadge.Visibility = Visibility.Collapsed;
@@ -168,7 +169,7 @@ namespace Kuiz
                     // Check if answer is empty (timeout)
                     if (string.IsNullOrWhiteSpace(answer))
                     {
-                        Logger.LogInfo($"â±ï¸ Empty answer from {playerName} - treating as timeout");
+                        Logger.LogInfo($"?? Empty answer from {playerName} - treating as timeout");
                         
                         // Count as mistake
                         if (!_gameState.Mistakes.ContainsKey(playerName))
@@ -180,7 +181,7 @@ namespace Kuiz
                         
                         // Show timeout result
                         _soundService.PlayIncorrect();
-                        TxtOverlayStatus.Text = "æ™‚é–“åˆ‡ã‚Œ";
+                        TxtOverlayStatus.Text = "ŠÔØ‚ê";
                         TxtOverlayDetail.Text = playerName;
                         ResultOverlay.Visibility = Visibility.Visible;
                         ResultOverlay.IsHitTestVisible = true;
@@ -226,11 +227,11 @@ namespace Kuiz
             _soundService.PlayPress();
         }
         
-        // Handle full-width space for buzz (å…¨è§’ã‚¹ãƒšãƒ¼ã‚¹)
+        // Handle full-width space for buzz (‘SŠpƒXƒy[ƒX)
         private void Window_PreviewTextInput(object sender, TextCompositionEventArgs e)
         {
             // Check for full-width space (U+3000)
-            if (e.Text == "ã€€" && GamePanel.Visibility == Visibility.Visible)
+            if (e.Text == "@" && GamePanel.Visibility == Visibility.Visible)
             {
                 e.Handled = true;
                 
@@ -376,7 +377,7 @@ namespace Kuiz
 
         private void ShowServerErrorPopup(string message)
         {
-            // æ—¢å­˜ã®ã‚¨ãƒ©ãƒ¼ã‚ªãƒ¼ãƒãƒ¼ãƒ¬ã‚¤ãŒã‚ã‚Œã°ä½¿ç”¨ã€ãªã‘ã‚Œã°StartGameConfirmã‚’æµç”¨
+            // Šù‘¶‚ÌƒGƒ‰[ƒI[ƒo[ƒŒƒC‚ª‚ ‚ê‚Îg—pA‚È‚¯‚ê‚ÎStartGameConfirm‚ğ—¬—p
             var errorOverlay = new System.Windows.Controls.Grid
             {
                 Background = new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromArgb(200, 0, 0, 0)),
@@ -399,7 +400,7 @@ namespace Kuiz
 
             var titleText = new System.Windows.Controls.TextBlock
             {
-                Text = "âš ï¸ æ¥ç¶šã‚¨ãƒ©ãƒ¼",
+                Text = "?? Ú‘±ƒGƒ‰[",
                 FontSize = 22,
                 FontWeight = FontWeights.Bold,
                 TextAlignment = TextAlignment.Center,
@@ -445,24 +446,24 @@ namespace Kuiz
         {
             try
             {
-                Logger.LogInfo("ğŸ” Testing API connection on startup...");
+                Logger.LogInfo("?? Testing API connection on startup...");
                 await _questionService.TestConnectionAsync();
-                Logger.LogInfo("âœ… API connection test successful");
+                Logger.LogInfo("? API connection test successful");
             }
             catch (Exception ex)
             {
                 Logger.LogError(ex);
-                Logger.LogError(new Exception($"âš ï¸ API connection test failed on startup: {ex.Message}"));
+                Logger.LogError(new Exception($"?? API connection test failed on startup: {ex.Message}"));
                 
-                // ãƒ¦ãƒ¼ã‚¶ãƒ¼ã«ã‚¨ãƒ©ãƒ¼ã‚’è¡¨ç¤ºï¼ˆãƒ¡ã‚¤ãƒ³ã‚¹ãƒ¬ãƒƒãƒ‰ã§ï¼‰
+                // ƒ†[ƒU[‚ÉƒGƒ‰[‚ğ•\¦iƒƒCƒ“ƒXƒŒƒbƒh‚Åj
                 Dispatcher.Invoke(() =>
                 {
                     MessageBox.Show(
-                        $"Railway APIã«æ¥ç¶šã§ãã¾ã›ã‚“ã§ã—ãŸã€‚\n\n" +
-                        $"ã‚¨ãƒ©ãƒ¼: {ex.Message}\n\n" +
-                        $"ã‚¤ãƒ³ã‚¿ãƒ¼ãƒãƒƒãƒˆæ¥ç¶šã‚’ç¢ºèªã—ã¦ãã ã•ã„ã€‚\n" +
-                        $"ãƒ­ã‚°ãƒ•ã‚¡ã‚¤ãƒ«: {Logger.GetLogFilePath()}",
-                        "æ¥ç¶šã‚¨ãƒ©ãƒ¼",
+                        $"Railway API‚ÉÚ‘±‚Å‚«‚Ü‚¹‚ñ‚Å‚µ‚½B\n\n" +
+                        $"ƒGƒ‰[: {ex.Message}\n\n" +
+                        $"ƒCƒ“ƒ^[ƒlƒbƒgÚ‘±‚ğŠm”F‚µ‚Ä‚­‚¾‚³‚¢B\n" +
+                        $"ƒƒOƒtƒ@ƒCƒ‹: {Logger.GetLogFilePath()}",
+                        "Ú‘±ƒGƒ‰[",
                         MessageBoxButton.OK,
                         MessageBoxImage.Warning
                     );

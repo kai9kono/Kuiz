@@ -16,20 +16,34 @@ namespace Kuiz.Services
     {
         // Railway APIのURL
         // DEBUGモードでもRailway URLを使用（ローカルサーバーがない場合）
-        private const string ApiUrl = "https://kuiz-production.up.railway.app/api/question";
+        private readonly string _apiUrl;
 
         private static readonly HttpClient _httpClient = new();
         
         public List<Question> Questions { get; private set; } = new();
+
+        public QuestionService() : this(new AppConfigService().Config)
+        {
+        }
+
+        public QuestionService(AppConfig config)
+        {
+            if (string.IsNullOrWhiteSpace(config.ApiUrl))
+            {
+                throw new ArgumentException("Question API URL is not configured.", nameof(config));
+            }
+
+            _apiUrl = config.ApiUrl.TrimEnd('/');
+        }
 
         public async Task<List<Question>> LoadQuestionsAsync(IProgress<int>? progress = null)
         {
             try
             {
                 progress?.Report(10);
-                Logger.LogInfo($"?? Loading questions from {ApiUrl}");
+                Logger.LogInfo($"?? Loading questions from {_apiUrl}");
                 
-                var response = await _httpClient.GetAsync(ApiUrl);
+                var response = await _httpClient.GetAsync(_apiUrl);
                 
                 Logger.LogInfo($"?? Response status: {response.StatusCode}");
                 
@@ -72,7 +86,7 @@ namespace Kuiz.Services
         {
             try
             {
-                var response = await _httpClient.GetAsync($"{ApiUrl}/{id}");
+                var response = await _httpClient.GetAsync($"{_apiUrl}/{id}");
                 if (!response.IsSuccessStatusCode) return null;
                 
                 var json = await response.Content.ReadAsStringAsync();
@@ -92,9 +106,9 @@ namespace Kuiz.Services
         {
             try
             {
-                Logger.LogInfo($"?? Getting {count} random questions from {ApiUrl}/random/{count}");
+                Logger.LogInfo($"?? Getting {count} random questions from {_apiUrl}/random/{count}");
                 
-                var response = await _httpClient.GetAsync($"{ApiUrl}/random/{count}");
+                var response = await _httpClient.GetAsync($"{_apiUrl}/random/{count}");
                 
                 Logger.LogInfo($"?? Response status: {response.StatusCode}");
                 
@@ -128,7 +142,7 @@ namespace Kuiz.Services
         {
             try
             {
-                Logger.LogInfo($"?? Adding question to API: {ApiUrl}");
+                Logger.LogInfo($"?? Adding question to API: {_apiUrl}");
                 Logger.LogInfo($"   Text: {text}");
                 Logger.LogInfo($"   Answer: {answer}");
                 Logger.LogInfo($"   Author: {author}");
@@ -137,7 +151,7 @@ namespace Kuiz.Services
                 var json = JsonSerializer.Serialize(dto);
                 var content = new StringContent(json, Encoding.UTF8, "application/json");
                 
-                var response = await _httpClient.PostAsync(ApiUrl, content);
+                var response = await _httpClient.PostAsync(_apiUrl, content);
                 
                 Logger.LogInfo($"?? Response status: {response.StatusCode}");
                 
@@ -173,7 +187,7 @@ namespace Kuiz.Services
                 var json = JsonSerializer.Serialize(dto);
                 var content = new StringContent(json, Encoding.UTF8, "application/json");
                 
-                var response = await _httpClient.PutAsync($"{ApiUrl}/{id}", content);
+                var response = await _httpClient.PutAsync($"{_apiUrl}/{id}", content);
                 
                 if (response.IsSuccessStatusCode)
                 {
@@ -191,7 +205,7 @@ namespace Kuiz.Services
         {
             try
             {
-                var response = await _httpClient.DeleteAsync($"{ApiUrl}/{id}");
+                var response = await _httpClient.DeleteAsync($"{_apiUrl}/{id}");
                 
                 if (response.IsSuccessStatusCode)
                 {
@@ -209,10 +223,10 @@ namespace Kuiz.Services
         {
             try
             {
-                Logger.LogInfo($"?? Testing connection to Railway API: {ApiUrl}");
+                Logger.LogInfo($"?? Testing connection to API: {_apiUrl}");
                 
                 // まずヘルスチェックを試す
-                var healthUrl = ApiUrl.Replace("/api/question", "/health");
+                var healthUrl = _apiUrl.Replace("/api/question", "/health");
                 Logger.LogInfo($"   Health check URL: {healthUrl}");
                 
                 var healthResponse = await _httpClient.GetAsync(healthUrl);
@@ -224,8 +238,8 @@ namespace Kuiz.Services
                 }
                 
                 // 次にAPIエンドポイントを直接テスト
-                Logger.LogInfo($"   Testing API endpoint: {ApiUrl}");
-                var apiResponse = await _httpClient.GetAsync(ApiUrl);
+                Logger.LogInfo($"   Testing API endpoint: {_apiUrl}");
+                var apiResponse = await _httpClient.GetAsync(_apiUrl);
                 Logger.LogInfo($"   API endpoint status: {apiResponse.StatusCode}");
                 
                 if (!apiResponse.IsSuccessStatusCode)
@@ -240,7 +254,7 @@ namespace Kuiz.Services
             {
                 Logger.LogError(ex);
                 Logger.LogError(new Exception($"?? TestConnectionAsync failed: {ex.Message}"));
-                throw new Exception($"Cannot connect to Railway server: {ex.Message}", ex);
+                throw new Exception($"Cannot connect to the question API: {ex.Message}", ex);
             }
         }
 

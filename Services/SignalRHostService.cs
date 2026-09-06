@@ -123,7 +123,7 @@ namespace Kuiz.Services
             {
                 if (_connection != null && LobbyCode != null)
                 {
-                    await _connection.InvokeAsync("LeaveLobby", LobbyCode, "Host");
+                    await _connection.InvokeAsync("LeaveLobby");
                     await _connection.StopAsync();
                     await _connection.DisposeAsync();
                     _connection = null;
@@ -143,7 +143,7 @@ namespace Kuiz.Services
         {
             if (_connection != null && _connection.State == HubConnectionState.Connected)
             {
-                await _connection.InvokeAsync("StartGame", LobbyCode, gameSettings);
+                await _connection.InvokeAsync("StartGame", gameSettings);
             }
         }
 
@@ -152,7 +152,7 @@ namespace Kuiz.Services
         {
             if (_connection != null && _connection.State == HubConnectionState.Connected)
             {
-                await _connection.InvokeAsync("UpdateGameState", LobbyCode, gameState);
+                await _connection.InvokeAsync("UpdateGameState", gameState);
             }
         }
 
@@ -161,7 +161,7 @@ namespace Kuiz.Services
         {
             if (_connection != null && _connection.State == HubConnectionState.Connected)
             {
-                await _connection.InvokeAsync("EndGame", LobbyCode, results);
+                await _connection.InvokeAsync("EndGame", results);
             }
         }
 
@@ -170,7 +170,7 @@ namespace Kuiz.Services
         {
             if (_connection != null && _connection.State == HubConnectionState.Connected)
             {
-                await _connection.InvokeAsync("SendBuzz", LobbyCode, playerName);
+                await _connection.InvokeAsync("SendBuzz");
             }
         }
 
@@ -179,7 +179,7 @@ namespace Kuiz.Services
         {
             if (_connection != null && _connection.State == HubConnectionState.Connected)
             {
-                await _connection.InvokeAsync("SendAnswerResult", LobbyCode, playerName, isCorrect);
+                await _connection.InvokeAsync("SendAnswerResult", playerName, isCorrect);
             }
         }
 
@@ -188,7 +188,7 @@ namespace Kuiz.Services
         {
             if (_connection != null && _connection.State == HubConnectionState.Connected)
             {
-                await _connection.InvokeAsync("SendNextQuestion", LobbyCode);
+                await _connection.InvokeAsync("SendNextQuestion");
             }
         }
     }
