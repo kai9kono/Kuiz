@@ -17,7 +17,7 @@ public class LobbyController : ControllerBase
     [HttpGet("{lobbyCode}")]
     public IActionResult GetLobby(string lobbyCode)
     {
-        var lobby = _lobbyService.GetLobbyState(lobbyCode);
+        var lobby = _lobbyService.GetLobbyStateByCode(lobbyCode);
         return Ok(lobby);
     }
 

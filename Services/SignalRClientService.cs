@@ -32,6 +32,8 @@ namespace Kuiz.Services
         {
             try
             {
+                await DisconnectAsync();
+
                 _playerName = playerName;
                 _lobbyCode = lobbyCode;
                 _serverUrl = serverUrl;
@@ -68,13 +70,12 @@ namespace Kuiz.Services
                 if (success)
                 {
                     Logger.LogInfo($"? Successfully joined lobby {lobbyCode} as {playerName}");
-                }
-                else
-                {
-                    Logger.LogInfo($"? Failed to join lobby {lobbyCode}. Server returned false.");
+                    return true;
                 }
 
-                return success;
+                Logger.LogInfo($"? Failed to join lobby {lobbyCode}. Server returned false.");
+                await DisconnectAsync();
+                return false;
             }
             catch (HttpRequestException httpEx)
             {

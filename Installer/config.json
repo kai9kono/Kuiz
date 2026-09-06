@@ -1,0 +1,5 @@
+{
+  "ApiUrl": "https://kuiz-server.onrender.com/api/question",
+  "ServerUrl": "https://kuiz-server.onrender.com",
+  "IsDebugMode": false
+}

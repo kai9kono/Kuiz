@@ -69,12 +69,12 @@ namespace Kuiz.Services
         /// <summary>
         /// Railway APIのURL（固定: 本番環境）
         /// </summary>
-        public string ApiUrl { get; set; } = "https://kuiz-production.up.railway.app/api/question";
+        public string ApiUrl { get; set; } = "https://kuiz-server.onrender.com/api/question";
 
         /// <summary>
         /// ゲームサーバーのベースURL（固定: Railway本番環境）
         /// </summary>
-        public string ServerUrl { get; set; } = "https://kuiz-production.up.railway.app";
+        public string ServerUrl { get; set; } = "https://kuiz-server.onrender.com";
 
         /// <summary>
         /// デバッグモード

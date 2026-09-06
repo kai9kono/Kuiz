@@ -21,6 +21,7 @@ namespace Kuiz.Services
 
         // Callbacks
         public Func<string, Task<bool>>? OnPlayerRegistered { get; set; }
+        public Func<string, Task>? OnPlayerLeft { get; set; }
         public Func<string, Task<bool>>? OnBuzzReceived { get; set; }
         public Func<string, string, Task<bool>>? OnAnswerReceived { get; set; }
         public Func<Task<object>>? OnStateRequested { get; set; }
@@ -92,10 +93,14 @@ namespace Kuiz.Services
             });
 
             // プレイヤー退出通知
-            _connection.On<string>("PlayerLeft", (playerName) =>
+            _connection.On<string>("PlayerLeft", async (playerName) =>
             {
-                CurrentPlayerCount--;
+                CurrentPlayerCount = Math.Max(1, CurrentPlayerCount - 1);
                 Logger.LogInfo($"Player left: {playerName}");
+                if (OnPlayerLeft != null)
+                {
+                    await OnPlayerLeft(playerName);
+                }
             });
 
             // バズ受信

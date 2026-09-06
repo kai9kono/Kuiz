@@ -26,6 +26,7 @@ namespace Kuiz
         
         // Prevent duplicate answer input dialogs
         private bool _isClientAnswering = false;
+        private bool _clientHandlersAttached;
 
         private void BtnTitleJoin_Click(object sender, RoutedEventArgs e) => ShowPanel(JoinPanel);
         private void BtnJoinBack_Click(object sender, RoutedEventArgs e) => ShowPanel(TitlePanel);
@@ -56,6 +57,10 @@ namespace Kuiz
 
             try
             {
+                // Register first so a fast host notification cannot be missed
+                // immediately after JoinLobby succeeds.
+                SetupSignalRClientHandlers();
+
                 // Use SignalR client to connect
                 var success = await _signalRClient.ConnectAsync(serverUrl, lobbyCode, name);
 
@@ -67,9 +72,6 @@ namespace Kuiz
                     
                     // Mark as client (not host)
                     _isHost = false;
-                    
-                    // Setup SignalR event handlers
-                    SetupSignalRClientHandlers();
                     
                     // Get lobby state and show lobby panel
                     await UpdateClientLobbyState(lobbyCode);
@@ -101,6 +103,9 @@ namespace Kuiz
 
         private void SetupSignalRClientHandlers()
         {
+            if (_clientHandlersAttached) return;
+            _clientHandlersAttached = true;
+
             _signalRClient.OnGameStateUpdated += (state) =>
             {
                 Dispatcher.Invoke(() =>

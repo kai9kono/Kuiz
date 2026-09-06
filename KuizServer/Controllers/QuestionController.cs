@@ -31,7 +31,7 @@ public class QuestionController : ControllerBase
         catch (Exception ex)
         {
             Console.WriteLine($"? Error getting all questions: {ex}");
-            return StatusCode(500, new { error = "Failed to retrieve questions", details = ex.Message, stackTrace = ex.StackTrace });
+            return StatusCode(500, new { error = "Failed to retrieve questions" });
         }
     }
 
@@ -58,7 +58,7 @@ public class QuestionController : ControllerBase
         catch (Exception ex)
         {
             Console.WriteLine($"? Error getting random questions: {ex.Message}");
-            return StatusCode(500, new { error = "Failed to retrieve questions", details = ex.Message });
+            return StatusCode(500, new { error = "Failed to retrieve questions" });
         }
     }
 

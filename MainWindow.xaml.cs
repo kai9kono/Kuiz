@@ -117,6 +117,16 @@ namespace Kuiz
                 return true;
             };
             
+            _hostService.OnPlayerLeft = async (playerName) =>
+            {
+                await Dispatcher.InvokeAsync(() =>
+                {
+                    _gameState.LobbyPlayers.Remove(playerName);
+                    UpdateLobbyUi();
+                    UpdatePlayerCountDisplay();
+                });
+            };
+
             _hostService.OnBuzzReceived = async (playerName) =>
             {
                 await Dispatcher.InvokeAsync(async () =>

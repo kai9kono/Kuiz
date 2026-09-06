@@ -39,6 +39,12 @@ public class LobbyService
 
     public bool JoinLobby(string lobbyCode, string playerName, string connectionId)
     {
+        if (string.IsNullOrWhiteSpace(lobbyCode) || lobbyCode.Length != 6 ||
+            lobbyCode.Any(character => !char.IsAsciiLetterOrDigit(character)))
+        {
+            return false;
+        }
+
         var normalizedCode = lobbyCode.Trim().ToUpperInvariant();
         var normalizedName = NormalizePlayerName(playerName);
 
@@ -120,6 +126,33 @@ public class LobbyService
         }
     }
 
+    public object GetLobbyStateByCode(string lobbyCode)
+    {
+        if (string.IsNullOrWhiteSpace(lobbyCode))
+        {
+            return new { exists = false };
+        }
+
+        var normalizedCode = lobbyCode.Trim().ToUpperInvariant();
+        if (!_lobbies.TryGetValue(normalizedCode, out var lobby))
+        {
+            return new { exists = false };
+        }
+
+        lock (lobby.SyncRoot)
+        {
+            return new
+            {
+                exists = true,
+                code = lobby.Code,
+                host = lobby.HostName,
+                players = lobby.Players.Select(player => player.Name).ToList(),
+                playerCount = lobby.Players.Count,
+                maxPlayers = MaxPlayersPerLobby
+            };
+        }
+    }
+
     public string? GetLobbyByConnectionId(string connectionId) =>
         _memberships.TryGetValue(connectionId, out var membership) ? membership.LobbyCode : null;
 
@@ -133,8 +166,13 @@ public class LobbyService
 
     private static string NormalizePlayerName(string playerName)
     {
+        if (string.IsNullOrWhiteSpace(playerName))
+        {
+            throw new ArgumentException("Player name must contain 1 to 32 characters.", nameof(playerName));
+        }
+
         var normalized = playerName.Trim();
-        if (string.IsNullOrWhiteSpace(normalized) || normalized.Length > 32)
+        if (normalized.Length > 32)
         {
             throw new ArgumentException("Player name must contain 1 to 32 characters.", nameof(playerName));
         }
