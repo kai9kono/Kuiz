@@ -7,6 +7,7 @@
         xmlns:pack="clr-namespace:MaterialDesignThemes.Wpf;assembly=MaterialDesignThemes.Wpf"
         mc:Ignorable="d"
         Title="Kuiz" Height="1080" Width="1920" 
+        FontFamily="{StaticResource AppFont}"
         WindowStyle="None" ResizeMode="NoResize" WindowStartupLocation="Manual" 
         Left="0" Top="0" 
         PreviewKeyDown="Window_PreviewKeyDown" 
@@ -434,7 +435,7 @@
                     <StackPanel>
                         <TextBlock Text="ロビーコード" FontSize="14" Foreground="{Binding SecondaryTextColor}" HorizontalAlignment="Center" Margin="0,0,0,8" />
                         <TextBlock x:Name="TxtLobbyCode" Text="------" FontSize="32" FontWeight="Bold" 
-                                   HorizontalAlignment="Center" FontFamily="Consolas" 
+                                   HorizontalAlignment="Center" FontFamily="{StaticResource AppFont}"
                                    Foreground="{Binding AccentColor}" Cursor="Hand" 
                                    ToolTip="クリックしてコピー" MouseLeftButtonDown="TxtLobbyCode_Click" />
                     </StackPanel>
@@ -640,7 +641,7 @@
                              FontSize="16" 
                              CharacterCasing="Upper"
                              MaxLength="6"
-                             FontFamily="Consolas"
+                             FontFamily="{StaticResource AppFont}"
                              HorizontalContentAlignment="Left"
                              Foreground="{Binding ForegroundColor}"
                              Background="{Binding BackgroundColor}" />

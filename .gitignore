@@ -41,6 +41,9 @@ Installer/Dependencies/
 *.iss
 *.ps1
 !Start-TwoClients.ps1
+!Installer/Build-InnoSetup.ps1
+!Installer/KuizSetup.iss
+!Installer/Prepare-DownloadSite.ps1
 sql/
 scripts/
 *.slnx
@@ -375,3 +378,6 @@ MigrationBackup/
 
 # Fody - auto-generated XML schema
 FodyWeavers.xsd
+
+# Sites keeps the download page in its own repository
+/DownloadSite/

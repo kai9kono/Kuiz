@@ -30,6 +30,19 @@ namespace Kuiz.Services
                 {
                     var json = File.ReadAllText(ConfigPath);
                     Config = JsonSerializer.Deserialize<AppConfig>(json) ?? new AppConfig();
+                    // Migrate only the retired Kuiz endpoint; preserve custom/debug servers.
+                    var migrated = false;
+                    if (IsRetiredEndpoint(Config.ApiUrl))
+                    {
+                        Config.ApiUrl = new AppConfig().ApiUrl;
+                        migrated = true;
+                    }
+                    if (IsRetiredEndpoint(Config.ServerUrl))
+                    {
+                        Config.ServerUrl = new AppConfig().ServerUrl;
+                        migrated = true;
+                    }
+                    if (migrated) Save();
                 }
                 else
                 {
@@ -43,6 +56,10 @@ namespace Kuiz.Services
                 Config = new AppConfig();
             }
         }
+
+        private static bool IsRetiredEndpoint(string? url) =>
+            Uri.TryCreate(url, UriKind.Absolute, out var uri) &&
+            uri.Host.Equals("kuiz-production.up.railway.app", StringComparison.OrdinalIgnoreCase);
 
         public void Save()
         {
@@ -67,12 +84,12 @@ namespace Kuiz.Services
     public class AppConfig
     {
         /// <summary>
-        /// Railway APIのURL（固定: 本番環境）
+        /// 本番の問題APIのURL
         /// </summary>
         public string ApiUrl { get; set; } = "https://kuiz-server.onrender.com/api/question";
 
         /// <summary>
-        /// ゲームサーバーのベースURL（固定: Railway本番環境）
+        /// 本番ゲームサーバーのベースURL
         /// </summary>
         public string ServerUrl { get; set; } = "https://kuiz-server.onrender.com";
 

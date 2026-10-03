@@ -7,7 +7,7 @@ using System.Windows.Media;
 namespace Kuiz.Services
 {
     /// <summary>
-    /// テーマカラーを管理するサービス
+    /// 繝�繝ｼ繝槭き繝ｩ繝ｼ繧堤ｮ｡逅�縺吶ｋ繧ｵ繝ｼ繝薙せ
     /// </summary>
     public class ThemeService : INotifyPropertyChanged
     {

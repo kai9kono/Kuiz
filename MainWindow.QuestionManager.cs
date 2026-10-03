@@ -11,7 +11,7 @@ using Kuiz.Services;
 namespace Kuiz
 {
     /// <summary>
-    /// –â‘èƒ}ƒl[ƒWƒƒ[ŠÖ˜A‚ÌUIˆ—
+    /// å•é¡Œãƒãƒãƒ¼ã‚¸ãƒ£ãƒ¼é–¢é€£ã®UIå‡¦ç†
     /// </summary>
     public partial class MainWindow
     {
@@ -60,13 +60,13 @@ namespace Kuiz
 
             if (string.IsNullOrEmpty(text))
             {
-                ShowQuestionManagerToast("–â‘è•¶‚ğ“ü—Í‚µ‚Ä‚­‚¾‚³‚¢", isError: true);
+                ShowQuestionManagerToast("å•é¡Œæ–‡ã‚’å…¥åŠ›ã—ã¦ãã ã•ã„", isError: true);
                 return;
             }
 
             if (string.IsNullOrEmpty(answer))
             {
-                ShowQuestionManagerToast("“š‚¦‚ğ“ü—Í‚µ‚Ä‚­‚¾‚³‚¢", isError: true);
+                ShowQuestionManagerToast("ç­”ãˆã‚’å…¥åŠ›ã—ã¦ãã ã•ã„", isError: true);
                 return;
             }
 
@@ -79,9 +79,9 @@ namespace Kuiz
                 _editingQuestion.Answer = answer;
                 _editingQuestion.Author = author;
                 
-                ShowQuestionManagerToast("–â‘è‚ğXV‚µ‚Ü‚µ‚½");
+                ShowQuestionManagerToast("å•é¡Œã‚’æ›´æ–°ã—ã¾ã—ãŸ");
                 _editingQuestion = null;
-                BtnAddToList.Content = "ƒŠƒXƒg‚É’Ç‰Á";
+                BtnAddToList.Content = "ãƒªã‚¹ãƒˆã«è¿½åŠ ";
             }
             else
             {
@@ -94,7 +94,7 @@ namespace Kuiz
                 };
 
                 _createdQuestions.Add(dto);
-                ShowQuestionManagerToast("ƒŠƒXƒg‚É’Ç‰Á‚µ‚Ü‚µ‚½");
+                ShowQuestionManagerToast("ãƒªã‚¹ãƒˆã«è¿½åŠ ã—ã¾ã—ãŸ");
             }
             
             RefreshQuestionList();
@@ -111,7 +111,7 @@ namespace Kuiz
             TxtNewQuestionAnswer.Text = string.Empty;
             TxtNewQuestionText.Focus();
             _editingQuestion = null;
-            BtnAddToList.Content = "ƒŠƒXƒg‚É’Ç‰Á";
+            BtnAddToList.Content = "ãƒªã‚¹ãƒˆã«è¿½åŠ ";
         }
 
         private void BtnEditFromList_Click(object sender, RoutedEventArgs e)
@@ -122,7 +122,7 @@ namespace Kuiz
                 TxtNewQuestionText.Text = dto.Text;
                 TxtNewQuestionAnswer.Text = dto.Answer;
                 TxtNewQuestionText.Focus();
-                BtnAddToList.Content = "XV";
+                BtnAddToList.Content = "æ›´æ–°";
             }
         }
 
@@ -139,7 +139,7 @@ namespace Kuiz
                     TxtNewQuestionText.Text = string.Empty;
                     TxtNewQuestionAnswer.Text = string.Empty;
                     _editingQuestion = null;
-                    BtnAddToList.Content = "ƒŠƒXƒg‚É’Ç‰Á";
+                    BtnAddToList.Content = "ãƒªã‚¹ãƒˆã«è¿½åŠ ";
                 }
             }
         }
@@ -155,7 +155,7 @@ namespace Kuiz
         {
             if (_createdQuestions.Count == 0)
             {
-                ShowQuestionManagerToast("ƒŠƒXƒg‚ª‹ó‚Å‚·", isError: true);
+                ShowQuestionManagerToast("ãƒªã‚¹ãƒˆãŒç©ºã§ã™", isError: true);
                 return;
             }
 
@@ -172,12 +172,12 @@ namespace Kuiz
             {
                 var json = JsonSerializer.Serialize(_createdQuestions, new JsonSerializerOptions { WriteIndented = true });
                 await File.WriteAllTextAsync(dlg.FileName, json);
-                ShowQuestionManagerToast($"{_createdQuestions.Count}Œ‚ğƒGƒNƒXƒ|[ƒg‚µ‚Ü‚µ‚½");
+                ShowQuestionManagerToast($"{_createdQuestions.Count}ä»¶ã‚’ã‚¨ã‚¯ã‚¹ãƒãƒ¼ãƒˆã—ã¾ã—ãŸ");
             }
             catch (Exception ex)
             {
                 Logger.LogError(ex);
-                ShowQuestionManagerToast("ƒGƒNƒXƒ|[ƒg‚É¸”s‚µ‚Ü‚µ‚½", isError: true);
+                ShowQuestionManagerToast("ã‚¨ã‚¯ã‚¹ãƒãƒ¼ãƒˆã«å¤±æ•—ã—ã¾ã—ãŸ", isError: true);
             }
         }
 
@@ -185,14 +185,14 @@ namespace Kuiz
         {
             if (_createdQuestions.Count == 0)
             {
-                ShowQuestionManagerToast("ƒŠƒXƒg‚ª‹ó‚Å‚·", isError: true);
+                ShowQuestionManagerToast("ãƒªã‚¹ãƒˆãŒç©ºã§ã™", isError: true);
                 return;
             }
 
             // Show confirmation dialog
             Dispatcher.Invoke(() =>
             {
-                TxtImportConfirmMessage.Text = $"{_createdQuestions.Count}Œ‚Ì–â‘è‚ğDB‚ÉƒCƒ“ƒ|[ƒg‚µ‚Ü‚·‚©H";
+                TxtImportConfirmMessage.Text = $"{_createdQuestions.Count}ä»¶ã®å•é¡Œã‚’DBã«ã‚¤ãƒ³ãƒãƒ¼ãƒˆã—ã¾ã™ã‹ï¼Ÿ";
                 ImportToDbConfirmOverlay.Visibility = Visibility.Visible;
                 ImportToDbConfirmOverlay.IsHitTestVisible = true;
                 AnimateConfirmOverlayOpen(ImportToDbConfirmBorder);
@@ -218,14 +218,14 @@ namespace Kuiz
                     count++;
                 }
 
-                ShowQuestionManagerToast($"{count}Œ‚ğDB‚É“o˜^‚µ‚Ü‚µ‚½");
+                ShowQuestionManagerToast($"{count}ä»¶ã‚’DBã«ç™»éŒ²ã—ã¾ã—ãŸ");
                 _createdQuestions.Clear();
                 RefreshQuestionList();
             }
             catch (Exception ex)
             {
                 Logger.LogError(ex);
-                ShowQuestionManagerToast("DB“o˜^‚É¸”s‚µ‚Ü‚µ‚½", isError: true);
+                ShowQuestionManagerToast("DBç™»éŒ²ã«å¤±æ•—ã—ã¾ã—ãŸ", isError: true);
             }
         }
 
@@ -237,7 +237,7 @@ namespace Kuiz
 
         private void UpdateQuestionListCount()
         {
-            TxtQuestionListCount.Text = $"({_createdQuestions.Count}Œ)";
+            TxtQuestionListCount.Text = $"({_createdQuestions.Count}ä»¶)";
         }
 
         // Question History
@@ -248,7 +248,7 @@ namespace Kuiz
             Dispatcher.Invoke(() =>
             {
                 ListQuestionHistory.ItemsSource = _historyService.History;
-                TxtHistoryCount.Text = $"({_historyService.History.Count}Œ)";
+                TxtHistoryCount.Text = $"({_historyService.History.Count}ä»¶)";
                 
                 if (_historyService.History.Count == 0)
                 {
@@ -267,7 +267,7 @@ namespace Kuiz
         {
             if (_historyService.History.Count == 0)
             {
-                ShowQuestionManagerToast("—š—ğ‚ÍŠù‚É‹ó‚Å‚·", isError: true);
+                ShowQuestionManagerToast("å±¥æ­´ã¯æ—¢ã«ç©ºã§ã™", isError: true);
                 return;
             }
 
@@ -283,7 +283,7 @@ namespace Kuiz
 
             await _historyService.ClearHistoryAsync();
             await LoadQuestionHistoryAsync();
-            ShowQuestionManagerToast("—š—ğ‚ğƒNƒŠƒA‚µ‚Ü‚µ‚½");
+            ShowQuestionManagerToast("å±¥æ­´ã‚’ã‚¯ãƒªã‚¢ã—ã¾ã—ãŸ");
         }
 
         private void BtnClearHistoryConfirmNo_Click(object sender, RoutedEventArgs e)

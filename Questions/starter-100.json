@@ -1,0 +1,702 @@
+[
+  {
+    "Text": "滋賀県にあり、日本で最も面積が大きい湖は何でしょう？",
+    "Answer": "琵琶湖",
+    "Author": "Kuiz 初期問題",
+    "Category": "地理",
+    "Difficulty": "C"
+  },
+  {
+    "Text": "日本の都道府県で、面積が最も大きいのはどこでしょう？",
+    "Answer": "北海道",
+    "Author": "Kuiz 初期問題",
+    "Category": "地理",
+    "Difficulty": "C"
+  },
+  {
+    "Text": "スフィンクスとともにギザの台地に巨大なピラミッドが残る、アフリカの国はどこでしょう？",
+    "Answer": "エジプト",
+    "Author": "Kuiz 初期問題",
+    "Category": "地理",
+    "Difficulty": "C"
+  },
+  {
+    "Text": "パリの街を流れ、ノートルダム大聖堂のあるシテ島を囲む川は何でしょう？",
+    "Answer": "セーヌ川",
+    "Author": "Kuiz 初期問題",
+    "Category": "地理",
+    "Difficulty": "C"
+  },
+  {
+    "Text": "オーストラリアの首都で、シドニーとメルボルンの間に建設された都市はどこでしょう？",
+    "Answer": "キャンベラ",
+    "Author": "Kuiz 初期問題",
+    "Category": "地理",
+    "Difficulty": "C"
+  },
+  {
+    "Text": "南米の国ブラジルで、公用語として使われている言語は何でしょう？",
+    "Answer": "ポルトガル語",
+    "Author": "Kuiz 初期問題",
+    "Category": "地理",
+    "Difficulty": "C"
+  },
+  {
+    "Text": "世界で最も深い湖として知られ、ロシアのシベリアにある湖は何でしょう？",
+    "Answer": "バイカル湖",
+    "Author": "Kuiz 初期問題",
+    "Category": "地理",
+    "Difficulty": "B"
+  },
+  {
+    "Text": "ドナウ川を挟んでブダとペストの地区が広がる、ハンガリーの首都はどこでしょう？",
+    "Answer": "ブダペスト",
+    "Author": "Kuiz 初期問題",
+    "Category": "地理",
+    "Difficulty": "B"
+  },
+  {
+    "Text": "イタリア半島とバルカン半島の間に広がる、地中海の一部である海は何でしょう？",
+    "Answer": "アドリア海",
+    "Author": "Kuiz 初期問題",
+    "Category": "地理",
+    "Difficulty": "B"
+  },
+  {
+    "Text": "ニュージーランドの首都で、北島の南端に位置する都市はどこでしょう？",
+    "Answer": "ウェリントン",
+    "Author": "Kuiz 初期問題",
+    "Category": "地理",
+    "Difficulty": "B"
+  },
+  {
+    "Text": "1603年に征夷大将軍となり、江戸幕府を開いた人物は誰でしょう？",
+    "Answer": "徳川家康",
+    "Author": "Kuiz 初期問題",
+    "Category": "日本史",
+    "Difficulty": "C"
+  },
+  {
+    "Text": "1582年、本能寺で織田信長を襲った武将は誰でしょう？",
+    "Answer": "明智光秀",
+    "Author": "Kuiz 初期問題",
+    "Category": "日本史",
+    "Difficulty": "C"
+  },
+  {
+    "Text": "『土佐日記』を女性に仮託して書いた、平安時代の歌人は誰でしょう？",
+    "Answer": "紀貫之",
+    "Author": "Kuiz 初期問題",
+    "Category": "日本史",
+    "Difficulty": "C"
+  },
+  {
+    "Text": "奈良の東大寺に大仏を造立するよう命じた、奈良時代の天皇は誰でしょう？",
+    "Answer": "聖武天皇",
+    "Author": "Kuiz 初期問題",
+    "Category": "日本史",
+    "Difficulty": "C"
+  },
+  {
+    "Text": "1853年に黒船を率いて浦賀に来航した、アメリカの海軍軍人は誰でしょう？",
+    "Answer": "ペリー",
+    "Author": "Kuiz 初期問題",
+    "Category": "日本史",
+    "Difficulty": "C"
+  },
+  {
+    "Text": "江戸幕府第8代将軍として享保の改革を進めた人物は誰でしょう？",
+    "Answer": "徳川吉宗",
+    "Author": "Kuiz 初期問題",
+    "Category": "日本史",
+    "Difficulty": "C"
+  },
+  {
+    "Text": "鎌倉幕府の執権・北条泰時が1232年に制定した、武家社会の法典は何でしょう？",
+    "Answer": "御成敗式目",
+    "Author": "Kuiz 初期問題",
+    "Category": "日本史",
+    "Difficulty": "B"
+  },
+  {
+    "Text": "1877年、西郷隆盛を中心とする士族が起こした、明治政府に対する反乱は何でしょう？",
+    "Answer": "西南戦争",
+    "Author": "Kuiz 初期問題",
+    "Category": "日本史",
+    "Difficulty": "B"
+  },
+  {
+    "Text": "645年に始まった政治改革で、中大兄皇子や中臣鎌足が中心となったものは何でしょう？",
+    "Answer": "大化の改新",
+    "Author": "Kuiz 初期問題",
+    "Category": "日本史",
+    "Difficulty": "B"
+  },
+  {
+    "Text": "歌川広重の浮世絵シリーズで、江戸と京都を結ぶ宿場の風景を描いた作品は何でしょう？",
+    "Answer": "東海道五十三次",
+    "Author": "Kuiz 初期問題",
+    "Category": "日本史",
+    "Difficulty": "B"
+  },
+  {
+    "Text": "『ローマは一日にして成らず』のローマが現在の首都となっている国はどこでしょう？",
+    "Answer": "イタリア",
+    "Author": "Kuiz 初期問題",
+    "Category": "世界史",
+    "Difficulty": "C"
+  },
+  {
+    "Text": "フランス革命で1789年7月14日に民衆が襲撃した、パリの牢獄は何でしょう？",
+    "Answer": "バスティーユ",
+    "Author": "Kuiz 初期問題",
+    "Category": "世界史",
+    "Difficulty": "C"
+  },
+  {
+    "Text": "アメリカの初代大統領で、首都の名前にもなっている人物は誰でしょう？",
+    "Answer": "ワシントン",
+    "Author": "Kuiz 初期問題",
+    "Category": "世界史",
+    "Difficulty": "C"
+  },
+  {
+    "Text": "『我輩の辞書に不可能という文字はない』という言葉で知られる、フランスの皇帝は誰でしょう？",
+    "Answer": "ナポレオン",
+    "Author": "Kuiz 初期問題",
+    "Category": "世界史",
+    "Difficulty": "C"
+  },
+  {
+    "Text": "古代エジプトで使われた象形文字を、ギリシャ語由来の名称で何というでしょう？",
+    "Answer": "ヒエログリフ",
+    "Author": "Kuiz 初期問題",
+    "Category": "世界史",
+    "Difficulty": "C"
+  },
+  {
+    "Text": "インドの独立運動を非暴力・不服従の方針で率いた人物は誰でしょう？",
+    "Answer": "ガンディー",
+    "Author": "Kuiz 初期問題",
+    "Category": "世界史",
+    "Difficulty": "C"
+  },
+  {
+    "Text": "1453年にコンスタンティノープルが陥落したことで滅亡した、東ローマ帝国の別名は何でしょう？",
+    "Answer": "ビザンツ帝国",
+    "Author": "Kuiz 初期問題",
+    "Category": "世界史",
+    "Difficulty": "B"
+  },
+  {
+    "Text": "『ハムラビ法典』を制定したハムラビ王が統治した、メソポタミアの王国は何でしょう？",
+    "Answer": "バビロニア",
+    "Author": "Kuiz 初期問題",
+    "Category": "世界史",
+    "Difficulty": "B"
+  },
+  {
+    "Text": "1517年に『九十五か条の論題』を発表し、宗教改革のきっかけを作った人物は誰でしょう？",
+    "Answer": "ルター",
+    "Author": "Kuiz 初期問題",
+    "Category": "世界史",
+    "Difficulty": "B"
+  },
+  {
+    "Text": "18世紀後半に産業革命が最初に本格化した国はどこでしょう？",
+    "Answer": "イギリス",
+    "Author": "Kuiz 初期問題",
+    "Category": "世界史",
+    "Difficulty": "B"
+  },
+  {
+    "Text": "『吾輩は猫である』や『坊っちゃん』を書いた、日本の小説家は誰でしょう？",
+    "Answer": "夏目漱石",
+    "Author": "Kuiz 初期問題",
+    "Category": "文学",
+    "Difficulty": "C"
+  },
+  {
+    "Text": "『走れメロス』や『人間失格』を書いた、日本の小説家は誰でしょう？",
+    "Answer": "太宰治",
+    "Author": "Kuiz 初期問題",
+    "Category": "文学",
+    "Difficulty": "C"
+  },
+  {
+    "Text": "『銀河鉄道の夜』や『注文の多い料理店』を書いた、岩手県出身の作家は誰でしょう？",
+    "Answer": "宮沢賢治",
+    "Author": "Kuiz 初期問題",
+    "Category": "文学",
+    "Difficulty": "C"
+  },
+  {
+    "Text": "平安時代に『源氏物語』を書いた女性は誰でしょう？",
+    "Answer": "紫式部",
+    "Author": "Kuiz 初期問題",
+    "Category": "文学",
+    "Difficulty": "C"
+  },
+  {
+    "Text": "『枕草子』を書いた、平安時代の女性は誰でしょう？",
+    "Answer": "清少納言",
+    "Author": "Kuiz 初期問題",
+    "Category": "文学",
+    "Difficulty": "C"
+  },
+  {
+    "Text": "『ロミオとジュリエット』や『ハムレット』を書いた、イギリスの劇作家は誰でしょう？",
+    "Answer": "シェイクスピア",
+    "Author": "Kuiz 初期問題",
+    "Category": "文学",
+    "Difficulty": "C"
+  },
+  {
+    "Text": "川端康成の小説『雪国』で、主人公・島村が出会う芸者の名前は何でしょう？",
+    "Answer": "駒子",
+    "Author": "Kuiz 初期問題",
+    "Category": "文学",
+    "Difficulty": "B"
+  },
+  {
+    "Text": "『罪と罰』や『カラマーゾフの兄弟』を書いた、ロシアの小説家は誰でしょう？",
+    "Answer": "ドストエフスキー",
+    "Author": "Kuiz 初期問題",
+    "Category": "文学",
+    "Difficulty": "B"
+  },
+  {
+    "Text": "フランスの作家サン＝テグジュペリが書いた、小さな星から来た王子の物語は何でしょう？",
+    "Answer": "星の王子さま",
+    "Author": "Kuiz 初期問題",
+    "Category": "文学",
+    "Difficulty": "B"
+  },
+  {
+    "Text": "『奥の細道』で松尾芭蕉とともに旅をした、同行者の俳人は誰でしょう？",
+    "Answer": "河合曾良",
+    "Author": "Kuiz 初期問題",
+    "Category": "文学",
+    "Difficulty": "B"
+  },
+  {
+    "Text": "元素記号Oで表され、私たちの呼吸に必要な気体は何でしょう？",
+    "Answer": "酸素",
+    "Author": "Kuiz 初期問題",
+    "Category": "科学",
+    "Difficulty": "C"
+  },
+  {
+    "Text": "光を使って二酸化炭素と水から有機物を作る、植物の働きは何でしょう？",
+    "Answer": "光合成",
+    "Author": "Kuiz 初期問題",
+    "Category": "科学",
+    "Difficulty": "C"
+  },
+  {
+    "Text": "太陽系の惑星で、太陽に最も近い位置を公転しているのは何でしょう？",
+    "Answer": "水星",
+    "Author": "Kuiz 初期問題",
+    "Category": "科学",
+    "Difficulty": "C"
+  },
+  {
+    "Text": "昆虫の脚は、成虫では通常何本あるでしょう？数字で答えてください。",
+    "Answer": "6",
+    "Author": "Kuiz 初期問題",
+    "Category": "科学",
+    "Difficulty": "C"
+  },
+  {
+    "Text": "振動数の単位で、記号Hzで表されるものは何でしょう？",
+    "Answer": "ヘルツ",
+    "Author": "Kuiz 初期問題",
+    "Category": "科学",
+    "Difficulty": "C"
+  },
+  {
+    "Text": "物体が液体や気体から受ける浮力についての原理に名を残す、古代ギリシャの学者は誰でしょう？",
+    "Answer": "アルキメデス",
+    "Author": "Kuiz 初期問題",
+    "Category": "科学",
+    "Difficulty": "C"
+  },
+  {
+    "Text": "原子番号6、元素記号Cで表され、ダイヤモンドや黒鉛を作る元素は何でしょう？",
+    "Answer": "炭素",
+    "Author": "Kuiz 初期問題",
+    "Category": "科学",
+    "Difficulty": "B"
+  },
+  {
+    "Text": "電流が導線を流れるときの電圧・電流・抵抗の関係を表す法則は何でしょう？",
+    "Answer": "オームの法則",
+    "Author": "Kuiz 初期問題",
+    "Category": "科学",
+    "Difficulty": "B"
+  },
+  {
+    "Text": "細胞内でエネルギーの供給を担い、『細胞の発電所』とも呼ばれる小器官は何でしょう？",
+    "Answer": "ミトコンドリア",
+    "Author": "Kuiz 初期問題",
+    "Category": "科学",
+    "Difficulty": "B"
+  },
+  {
+    "Text": "地球の大気で、体積の約78％を占める気体は何でしょう？",
+    "Answer": "窒素",
+    "Author": "Kuiz 初期問題",
+    "Category": "科学",
+    "Difficulty": "B"
+  },
+  {
+    "Text": "三角形の内角の和は、平面上では何度でしょう？数字で答えてください。",
+    "Answer": "180",
+    "Author": "Kuiz 初期問題",
+    "Category": "数学・ことば",
+    "Difficulty": "C"
+  },
+  {
+    "Text": "1より大きく、1と自分自身以外の正の約数を持たない整数を何というでしょう？",
+    "Answer": "素数",
+    "Author": "Kuiz 初期問題",
+    "Category": "数学・ことば",
+    "Difficulty": "C"
+  },
+  {
+    "Text": "ことわざ『急がば何』で、何に入る動詞は何でしょう？",
+    "Answer": "回れ",
+    "Author": "Kuiz 初期問題",
+    "Category": "数学・ことば",
+    "Difficulty": "C"
+  },
+  {
+    "Text": "英語の曜日で、Mondayの次に来る曜日は何でしょう？英語で答えてください。",
+    "Answer": "Tuesday",
+    "Author": "Kuiz 初期問題",
+    "Category": "数学・ことば",
+    "Difficulty": "C"
+  },
+  {
+    "Text": "『猫に小判』と同じ意味のことわざ『豚に何』の、何に入る言葉は何でしょう？",
+    "Answer": "真珠",
+    "Author": "Kuiz 初期問題",
+    "Category": "数学・ことば",
+    "Difficulty": "C"
+  },
+  {
+    "Text": "円の直径に対する円周の長さの比を何というでしょう？",
+    "Answer": "円周率",
+    "Author": "Kuiz 初期問題",
+    "Category": "数学・ことば",
+    "Difficulty": "C"
+  },
+  {
+    "Text": "直角三角形の三辺について、斜辺の長さの二乗が他の二辺の二乗の和に等しいという定理は何でしょう？",
+    "Answer": "三平方の定理",
+    "Author": "Kuiz 初期問題",
+    "Category": "数学・ことば",
+    "Difficulty": "B"
+  },
+  {
+    "Text": "統計で、データを小さい順に並べたときに中央に位置する値を何というでしょう？",
+    "Answer": "中央値",
+    "Author": "Kuiz 初期問題",
+    "Category": "数学・ことば",
+    "Difficulty": "B"
+  },
+  {
+    "Text": "『一石二鳥』と同じ意味を持つ、『一挙』で始まる四字熟語は何でしょう？",
+    "Answer": "一挙両得",
+    "Author": "Kuiz 初期問題",
+    "Category": "数学・ことば",
+    "Difficulty": "B"
+  },
+  {
+    "Text": "『矛盾』という言葉の由来となる話に登場する、矛と対になる防具は何でしょう？",
+    "Answer": "盾",
+    "Author": "Kuiz 初期問題",
+    "Category": "数学・ことば",
+    "Difficulty": "B"
+  },
+  {
+    "Text": "絵画『モナ・リザ』を描いた、イタリアの芸術家は誰でしょう？",
+    "Answer": "レオナルド・ダ・ヴィンチ",
+    "Author": "Kuiz 初期問題",
+    "Category": "芸術・音楽",
+    "Difficulty": "C"
+  },
+  {
+    "Text": "組曲『展覧会の絵』を作曲した、ロシアの作曲家は誰でしょう？",
+    "Answer": "ムソルグスキー",
+    "Author": "Kuiz 初期問題",
+    "Category": "芸術・音楽",
+    "Difficulty": "C"
+  },
+  {
+    "Text": "交響曲第9番の終楽章『歓喜の歌』で知られる、ドイツの作曲家は誰でしょう？",
+    "Answer": "ベートーヴェン",
+    "Author": "Kuiz 初期問題",
+    "Category": "芸術・音楽",
+    "Difficulty": "C"
+  },
+  {
+    "Text": "音楽で『だんだん強く』を意味する、イタリア語の用語は何でしょう？",
+    "Answer": "クレッシェンド",
+    "Author": "Kuiz 初期問題",
+    "Category": "芸術・音楽",
+    "Difficulty": "C"
+  },
+  {
+    "Text": "『考える人』を制作した、フランスの彫刻家は誰でしょう？",
+    "Answer": "ロダン",
+    "Author": "Kuiz 初期問題",
+    "Category": "芸術・音楽",
+    "Difficulty": "C"
+  },
+  {
+    "Text": "ピアノの鍵盤で、白鍵の間にある黒い鍵盤を日本語で何というでしょう？",
+    "Answer": "黒鍵",
+    "Author": "Kuiz 初期問題",
+    "Category": "芸術・音楽",
+    "Difficulty": "C"
+  },
+  {
+    "Text": "バレエ音楽『白鳥の湖』や『くるみ割り人形』を作曲した人物は誰でしょう？",
+    "Answer": "チャイコフスキー",
+    "Author": "Kuiz 初期問題",
+    "Category": "芸術・音楽",
+    "Difficulty": "B"
+  },
+  {
+    "Text": "絵画『ゲルニカ』を描いた、スペイン出身の画家は誰でしょう？",
+    "Answer": "ピカソ",
+    "Author": "Kuiz 初期問題",
+    "Category": "芸術・音楽",
+    "Difficulty": "B"
+  },
+  {
+    "Text": "四つの協奏曲からなる『四季』を作曲した、イタリアの作曲家は誰でしょう？",
+    "Answer": "ヴィヴァルディ",
+    "Author": "Kuiz 初期問題",
+    "Category": "芸術・音楽",
+    "Difficulty": "B"
+  },
+  {
+    "Text": "日本の伝統芸能で、謡と囃子に合わせて面をつけた演者が舞うものは何でしょう？",
+    "Answer": "能",
+    "Author": "Kuiz 初期問題",
+    "Category": "芸術・音楽",
+    "Difficulty": "B"
+  },
+  {
+    "Text": "サッカーで、試合開始時にピッチに立つ1チームの選手は何人でしょう？数字で答えてください。",
+    "Answer": "11",
+    "Author": "Kuiz 初期問題",
+    "Category": "スポーツ",
+    "Difficulty": "C"
+  },
+  {
+    "Text": "テニスで、得点が0であることを表す言葉は何でしょう？",
+    "Answer": "ラブ",
+    "Author": "Kuiz 初期問題",
+    "Category": "スポーツ",
+    "Difficulty": "C"
+  },
+  {
+    "Text": "柔道の技で、決まると直ちに勝利となる最高の判定は何でしょう？",
+    "Answer": "一本",
+    "Author": "Kuiz 初期問題",
+    "Category": "スポーツ",
+    "Difficulty": "C"
+  },
+  {
+    "Text": "ゴルフで、規定の打数より1打少なくホールを終えることを何というでしょう？",
+    "Answer": "バーディー",
+    "Author": "Kuiz 初期問題",
+    "Category": "スポーツ",
+    "Difficulty": "C"
+  },
+  {
+    "Text": "野球で、打者が一度の打席で一塁から本塁まで回って得点するヒットは何でしょう？",
+    "Answer": "ホームラン",
+    "Author": "Kuiz 初期問題",
+    "Category": "スポーツ",
+    "Difficulty": "C"
+  },
+  {
+    "Text": "バスケットボールで、ボールを床に弾ませながら移動する動作は何でしょう？",
+    "Answer": "ドリブル",
+    "Author": "Kuiz 初期問題",
+    "Category": "スポーツ",
+    "Difficulty": "C"
+  },
+  {
+    "Text": "バドミントンで、ラケットで打ち合う羽根のついた道具を何というでしょう？",
+    "Answer": "シャトル",
+    "Author": "Kuiz 初期問題",
+    "Category": "スポーツ",
+    "Difficulty": "B"
+  },
+  {
+    "Text": "陸上競技の十種競技を、英語由来の名称で何というでしょう？",
+    "Answer": "デカスロン",
+    "Author": "Kuiz 初期問題",
+    "Category": "スポーツ",
+    "Difficulty": "B"
+  },
+  {
+    "Text": "テニスで、相手の打球をワンバウンドさせずに打ち返すことを何というでしょう？",
+    "Answer": "ボレー",
+    "Author": "Kuiz 初期問題",
+    "Category": "スポーツ",
+    "Difficulty": "B"
+  },
+  {
+    "Text": "ラグビーで、相手のインゴールにボールを接地して得点することを何というでしょう？",
+    "Answer": "トライ",
+    "Author": "Kuiz 初期問題",
+    "Category": "スポーツ",
+    "Difficulty": "B"
+  },
+  {
+    "Text": "大豆を発酵させて作り、独特の粘りがある日本の食品は何でしょう？",
+    "Answer": "納豆",
+    "Author": "Kuiz 初期問題",
+    "Category": "食・生活",
+    "Difficulty": "C"
+  },
+  {
+    "Text": "インド料理で、粘土製の窯・タンドールで焼かれる平たいパンは何でしょう？",
+    "Answer": "ナン",
+    "Author": "Kuiz 初期問題",
+    "Category": "食・生活",
+    "Difficulty": "C"
+  },
+  {
+    "Text": "イタリア語で『引っ張り上げて』という意味の名前を持ち、マスカルポーネを使うデザートは何でしょう？",
+    "Answer": "ティラミス",
+    "Author": "Kuiz 初期問題",
+    "Category": "食・生活",
+    "Difficulty": "C"
+  },
+  {
+    "Text": "『畑の肉』とも呼ばれる、豆腐や味噌の原料となる豆は何でしょう？",
+    "Answer": "大豆",
+    "Author": "Kuiz 初期問題",
+    "Category": "食・生活",
+    "Difficulty": "C"
+  },
+  {
+    "Text": "卵やチーズ、黒こしょうを使い、名前に『炭焼き職人』という意味があるパスタ料理は何でしょう？",
+    "Answer": "カルボナーラ",
+    "Author": "Kuiz 初期問題",
+    "Category": "食・生活",
+    "Difficulty": "C"
+  },
+  {
+    "Text": "料理の『さしすせそ』で、『す』が表す調味料は何でしょう？",
+    "Answer": "酢",
+    "Author": "Kuiz 初期問題",
+    "Category": "食・生活",
+    "Difficulty": "C"
+  },
+  {
+    "Text": "コーヒーに泡立てたミルクを加えた、修道士の頭巾に名前の由来がある飲み物は何でしょう？",
+    "Answer": "カプチーノ",
+    "Author": "Kuiz 初期問題",
+    "Category": "食・生活",
+    "Difficulty": "B"
+  },
+  {
+    "Text": "フランス料理で、魚介とサフランを使うマルセイユの名物スープは何でしょう？",
+    "Answer": "ブイヤベース",
+    "Author": "Kuiz 初期問題",
+    "Category": "食・生活",
+    "Difficulty": "B"
+  },
+  {
+    "Text": "スペイン料理で、米を魚介や肉などと一緒に平たい鍋で炊く料理は何でしょう？",
+    "Answer": "パエリア",
+    "Author": "Kuiz 初期問題",
+    "Category": "食・生活",
+    "Difficulty": "B"
+  },
+  {
+    "Text": "羊毛を意味する英語で、衣類の素材名にもなっている言葉は何でしょう？",
+    "Answer": "ウール",
+    "Author": "Kuiz 初期問題",
+    "Category": "食・生活",
+    "Difficulty": "B"
+  },
+  {
+    "Text": "将棋で、斜め方向に何マスでも進める駒は何でしょう？",
+    "Answer": "角行",
+    "Author": "Kuiz 初期問題",
+    "Category": "文化・雑学",
+    "Difficulty": "C"
+  },
+  {
+    "Text": "チェスで、英語で『王』を意味し、これを詰ませると勝利になる駒は何でしょう？",
+    "Answer": "キング",
+    "Author": "Kuiz 初期問題",
+    "Category": "文化・雑学",
+    "Difficulty": "C"
+  },
+  {
+    "Text": "『千と千尋の神隠し』の監督を務めた、スタジオジブリの映画監督は誰でしょう？",
+    "Answer": "宮崎駿",
+    "Author": "Kuiz 初期問題",
+    "Category": "文化・雑学",
+    "Difficulty": "C"
+  },
+  {
+    "Text": "ギリシャ神話で、最高神ゼウスの兄弟である海の神は誰でしょう？",
+    "Answer": "ポセイドン",
+    "Author": "Kuiz 初期問題",
+    "Category": "文化・雑学",
+    "Difficulty": "C"
+  },
+  {
+    "Text": "地図で方向を示す『N』は、東西南北のどれを表すでしょう？",
+    "Answer": "北",
+    "Author": "Kuiz 初期問題",
+    "Category": "文化・雑学",
+    "Difficulty": "C"
+  },
+  {
+    "Text": "日本の郵便番号は、ハイフンを除くと何桁でしょう？数字で答えてください。",
+    "Answer": "7",
+    "Author": "Kuiz 初期問題",
+    "Category": "文化・雑学",
+    "Difficulty": "C"
+  },
+  {
+    "Text": "将棋で、飛車が成った駒を何というでしょう？",
+    "Answer": "竜王",
+    "Author": "Kuiz 初期問題",
+    "Category": "文化・雑学",
+    "Difficulty": "B"
+  },
+  {
+    "Text": "北欧神話で、雷の神として知られ、ミョルニルという槌を持つ神は誰でしょう？",
+    "Answer": "トール",
+    "Author": "Kuiz 初期問題",
+    "Category": "文化・雑学",
+    "Difficulty": "B"
+  },
+  {
+    "Text": "囲碁で、通常の盤面には縦横それぞれ何本の線があるでしょう？数字で答えてください。",
+    "Answer": "19",
+    "Author": "Kuiz 初期問題",
+    "Category": "文化・雑学",
+    "Difficulty": "B"
+  },
+  {
+    "Text": "『オセロ』で使われる盤面は、縦横それぞれ何マスでしょう？数字で答えてください。",
+    "Answer": "8",
+    "Author": "Kuiz 初期問題",
+    "Category": "文化・雑学",
+    "Difficulty": "B"
+  }
+]

@@ -8,7 +8,7 @@ using MaterialDesignThemes.Wpf;
 namespace Kuiz
 {
     /// <summary>
-    /// İ’èŠÖ˜A‚ÌUIˆ—
+    /// è¨­å®šé–¢é€£ã®UIå‡¦ç†
     /// </summary>
     public partial class MainWindow
     {
@@ -192,13 +192,13 @@ namespace Kuiz
         {
             if (_themeService.IsDarkMode)
             {
-                IconDarkMode.Kind = PackIconKind.WhiteBalanceSunny;
-                TxtDarkModeStatus.Text = "ƒ_[ƒNƒ‚[ƒh";
+                IconDarkMode.Kind = MaterialDesignThemes.Wpf.PackIconKind.WhiteBalanceSunny;
+                TxtDarkModeStatus.Text = "ãƒ€ãƒ¼ã‚¯ãƒ¢ãƒ¼ãƒ‰";
             }
             else
             {
-                IconDarkMode.Kind = PackIconKind.WeatherNight;
-                TxtDarkModeStatus.Text = "ƒ‰ƒCƒgƒ‚[ƒh";
+                IconDarkMode.Kind = MaterialDesignThemes.Wpf.PackIconKind.WeatherNight;
+                TxtDarkModeStatus.Text = "ãƒ©ã‚¤ãƒˆãƒ¢ãƒ¼ãƒ‰";
             }
         }
         

@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Linq;
 using System.Net.Http;
 using System.Text;
@@ -210,6 +210,29 @@ namespace Kuiz
                                 }
                             }
                             
+                            if (gameState.TryGetValue("correctAnswered", out var correctAnswered))
+                                _gameState.CorrectAnswered = correctAnswered.GetBoolean();
+                            if (gameState.TryGetValue("preDisplay", out var preDisplay))
+                                _hostPreDisplay = preDisplay.GetBoolean();
+                            if (gameState.TryGetValue("revealingAnswer", out var revealingAnswer))
+                            {
+                                _isRevealingAnswer = revealingAnswer.GetBoolean();
+                                if (_isRevealingAnswer)
+                                {
+                                    _clientRevealCts?.Cancel();
+                                    HideAnsweringModal();
+                                    HideOverlay();
+                                    _answerRevealText = gameState.TryGetValue("answerText", out var answerText)
+                                        ? answerText.GetString() ?? string.Empty : string.Empty;
+                                    // Answer text has its own control; never put it in RevealedText.
+                                    if (gameState.TryGetValue("questionText", out var questionText))
+                                        _gameState.RevealedText = questionText.GetString() ?? string.Empty;
+                                    TxtAnswerReveal.Text = $"答え：{_answerRevealText}";
+                                    TxtAnswerReveal.Visibility = Visibility.Visible;
+                                }
+                                else TxtAnswerReveal.Visibility = Visibility.Collapsed;
+                            }
+
                             // Update game UI to reflect changes
                             UpdateGameUi();
                         }
@@ -333,6 +356,11 @@ namespace Kuiz
                     // The connection and lobby stay alive between rounds. Clear
                     // only the local game state so this client can buzz again.
                     _gameEnded = false;
+                    _gameFlowVersion++;
+                    _isRevealingAnswer = false;
+                    _hostPreDisplay = true;
+                    _answerRevealText = string.Empty;
+                    TxtAnswerReveal.Visibility = Visibility.Collapsed;
                     _isClientAnswering = false;
                     _isAnswerDialogOpen = false;
                     _isPreDisplay = false;
@@ -405,8 +433,7 @@ namespace Kuiz
                     await ShowGameStartCountdownAsync();
                     
                     // Switch to game panel and wait for transition to complete
-                    HideAllPanels();
-                    GamePanel.Visibility = Visibility.Visible;
+                    await ShowPanelAsync(GamePanel);
                     UpdateGameUi();
                     
                     // Start the first question locally (OnNextQuestion handles subsequent questions)
@@ -502,6 +529,7 @@ namespace Kuiz
                     if (_gameEnded) return;
                     HideAnsweringModal();
                     Logger.LogInfo($"📋 Answer result: {playerName} - {(isCorrect ? "正解" : "不正解")}");
+                    _gameState.CorrectAnswered = isCorrect;
                     
                     // Hide answering badge
                     TxtAnsweringBadge.Visibility = Visibility.Collapsed;
@@ -525,13 +553,15 @@ namespace Kuiz
                     ResultOverlay.IsHitTestVisible = true;
                     AnimateOverlayOpen(ResultOverlayBorder);
                     
+                    var answerQuestionIndex = _clientQuestionIndex;
                     await Task.Delay(isCorrect ? 1000 : 1500);
+                    if (_gameEnded || answerQuestionIndex != _clientQuestionIndex) return;
                     
                     ResultOverlay.Visibility = Visibility.Collapsed;
                     ResultOverlay.IsHitTestVisible = false;
                     
                     // Resume local reveal if not correct (game continues)
-                    if (!isCorrect && _clientQuestionIndex >= 0 && _clientQuestionIndex < _clientQuestions.Count)
+                    if (!isCorrect && !_gameEnded && !_isRevealingAnswer && _clientQuestionIndex >= 0 && _clientQuestionIndex < _clientQuestions.Count)
                     {
                         // Resume from current position
                         var currentQuestion = _clientQuestions[_clientQuestionIndex].Text;
@@ -556,6 +586,10 @@ namespace Kuiz
                     Logger.LogInfo("📋 Next question notification received");
                     
                     // Reset question state for client
+                    _clientRevealCts?.Cancel();
+                    _gameState.ResetQuestionState();
+                    _isRevealingAnswer = false;
+                    TxtAnswerReveal.Visibility = Visibility.Collapsed;
                     _gameState.AttemptedThisQuestion.Clear();
                     _gameState.BuzzOrder.Clear();
                     _gameState.PausedForBuzz = false;
@@ -834,6 +868,7 @@ namespace Kuiz
         /// </summary>
         private async Task<string?> ShowClientAnswerInputAsync(int secondsTimeout)
         {
+            _isAnswerDialogOpen = true;
             var tcs = new TaskCompletionSource<string?>();
             CancellationTokenSource? cts = null;
 
@@ -903,6 +938,7 @@ namespace Kuiz
             }
             finally
             {
+                _isAnswerDialogOpen = false;
                 cts?.Cancel();
                 cts?.Dispose();
 
@@ -921,6 +957,8 @@ namespace Kuiz
         /// </summary>
         private async Task ShowClientPreDisplayBannerAsync(int questionNumber)
         {
+            _isPreDisplay = true;
+            _gameState.RevealedText = string.Empty;
             Dispatcher.Invoke(() =>
             {
                 TxtGameQuestion.Text = $"第{questionNumber}問";
@@ -934,6 +972,7 @@ namespace Kuiz
 
             Dispatcher.Invoke(() =>
             {
+                _isPreDisplay = false;
                 TxtGameQuestion.Text = string.Empty;
                 TxtGameQuestion.TextAlignment = System.Windows.TextAlignment.Left;
                 TxtGameQuestion.FontWeight = FontWeights.Normal;
@@ -977,13 +1016,12 @@ namespace Kuiz
 
                         revealIndex++;
                         var revealedText = questionText.Substring(0, revealIndex);
-                        _gameState.RevealedText = revealedText;
-
                         Dispatcher.Invoke(() =>
                         {
-                            if (!_isAnswerDialogOpen)
+                            if (!ct.IsCancellationRequested && !_gameEnded && !_isPreDisplay && !_isRevealingAnswer)
                             {
-                                TxtGameQuestion.Text = revealedText;
+                                _gameState.RevealedText = revealedText;
+                                if (!_isAnswerDialogOpen) TxtGameQuestion.Text = revealedText;
                             }
                         });
 

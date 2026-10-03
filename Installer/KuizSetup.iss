@@ -1,185 +1,52 @@
-; Kuiz - ƒIƒ“ƒ‰ƒCƒ“‘‰Ÿ‚µƒNƒCƒYƒQ[ƒ€
-; Inno Setup ƒCƒ“ƒXƒg[ƒ‰[ƒXƒNƒŠƒvƒg
-;
-; ?? d—v: ‚±‚Ìƒtƒ@ƒCƒ‹‚ğ’¼ÚƒRƒ“ƒpƒCƒ‹‚µ‚È‚¢‚Å‚­‚¾‚³‚¢I
-; 
-; ?? ƒCƒ“ƒXƒg[ƒ‰[‚ğì¬‚·‚é‚É‚Í:
-;    1. PowerShell‚ğŠJ‚­
-;    2. ƒvƒƒWƒFƒNƒgƒ‹[ƒg‚ÅˆÈ‰º‚ğÀs:
-;       .\Installer\Build-InnoSetup.ps1
-;    
-;    ‚±‚ÌƒXƒNƒŠƒvƒg‚Í©“®“I‚ÉˆÈ‰º‚ğs‚¢‚Ü‚·:
-;    - ÅV”Å‚ğƒrƒ‹ƒhiŒÃ‚¢ƒrƒ‹ƒh‚Ìê‡‚ÍŠm”Fj
-;    - publish\win-x64 ƒtƒHƒ‹ƒ_‚Éo—Í
-;    - Inno Setup‚ÅƒCƒ“ƒXƒg[ƒ‰[‚ğì¬
-;    - installer\KuizSetup-1.0.0.exe ‚ğ¶¬
-;
-; ?? ƒIƒvƒVƒ‡ƒ“:
-;    -SkipBuild        : ƒrƒ‹ƒh‚ğƒXƒLƒbƒviŠù‘¶‚Ìƒrƒ‹ƒh‚ğg—pj
-;    -Configuration    : Debug ‚Ü‚½‚Í ReleaseiƒfƒtƒHƒ‹ƒg: Releasej
-;
-; —á:
-;    .\Installer\Build-InnoSetup.ps1
-;    .\Installer\Build-InnoSetup.ps1 -SkipBuild
-;    .\Installer\Build-InnoSetup.ps1 -Configuration Debug
-;
-; „ª„ª„ª„ª„ª„ª„ª„ª„ª„ª„ª„ª„ª„ª„ª„ª„ª„ª„ª„ª„ª„ª„ª„ª„ª„ª„ª„ª„ª„ª„ª„ª„ª„ª„ª„ª„ª„ª„ª„ª„ª„ª„ª„ª„ª„ª„ª„ª„ª„ª„ª„ª„ª„ª„ª„ª„ª„ª„ª
-
 #define MyAppName "Kuiz"
-#define MyAppVersion "1.0.2"
-#define MyAppPublisher "Kai Kono"
-#define MyAppURL "https://github.com/kai9kono/Kuiz"
-#define MyAppExeName "Kuiz.exe"
-#define DotNetRuntimeUrl "https://aka.ms/dotnet/10.0/windowsdesktop-runtime-win-x64.exe"
-
-
+#ifndef MyAppVersion
+  #error MyAppVersion must be provided by Build-InnoSetup.ps1
+#endif
+#ifndef PublishDir
+  #error PublishDir must be provided by Build-InnoSetup.ps1
+#endif
 [Setup]
-; ƒAƒvƒŠƒP[ƒVƒ‡ƒ“î•ñ
+#ifdef VerificationBuild
+AppId={{2FDC2962-087C-42BF-B62C-3147B11DA44A}
+#else
 AppId={{A8C5D9E2-4B3F-4E1A-9D2C-7F8A3B6C5D9E}
+#endif
 AppName={#MyAppName}
 AppVersion={#MyAppVersion}
-AppPublisher={#MyAppPublisher}
-AppPublisherURL={#MyAppURL}
-AppSupportURL={#MyAppURL}/issues
-AppUpdatesURL={#MyAppURL}/releases
-DefaultDirName={autopf}\{#MyAppName}
-DefaultGroupName={#MyAppName}
+AppPublisher=Kai Kono
+AppPublisherURL=https://github.com/kai9kono/Kuiz
+AppSupportURL=https://github.com/kai9kono/Kuiz/issues
+DefaultDirName={autopf}\Kuiz
+DefaultGroupName=Kuiz
 DisableProgramGroupPage=yes
 LicenseFile=..\LICENSE
-OutputDir=..\installer
+#ifdef VerificationBuild
+OutputDir=..\artifacts
+OutputBaseFilename=KuizVerify-{#MyAppVersion}
+#else
+OutputDir=.
 OutputBaseFilename=KuizSetup-{#MyAppVersion}
+#endif
 Compression=lzma2/max
 SolidCompression=yes
 WizardStyle=modern
 SetupIconFile=..\Resources\icon\icon.ico
-UninstallDisplayIcon={app}\{#MyAppExeName}
-
-; Å¬Windowsƒo[ƒWƒ‡ƒ“
+UninstallDisplayIcon={app}\Kuiz.exe
 MinVersion=10.0.19041
-
-; ƒA[ƒLƒeƒNƒ`ƒƒ
 ArchitecturesAllowed=x64compatible
 ArchitecturesInstallIn64BitMode=x64compatible
-
-; “ÁŒ 
 PrivilegesRequired=lowest
 PrivilegesRequiredOverridesAllowed=dialog
-
+CloseApplications=yes
 [Languages]
 Name: "japanese"; MessagesFile: "compiler:Languages\Japanese.isl"
-
 [Tasks]
-Name: "desktopicon"; Description: "ƒfƒXƒNƒgƒbƒv‚ÉƒVƒ‡[ƒgƒJƒbƒg‚ğì¬(&D)"; GroupDescription: "’Ç‰ÁƒAƒCƒRƒ“:"; Flags: unchecked
-Name: "quicklaunchicon"; Description: "ƒNƒCƒbƒNƒXƒ^[ƒg‚ÉƒVƒ‡[ƒgƒJƒbƒg‚ğì¬(&Q)"; GroupDescription: "’Ç‰ÁƒAƒCƒRƒ“:"; Flags: unchecked; OnlyBelowVersion: 6.1; Check: not IsAdminInstallMode
-
+Name: "desktopicon"; Description: "ãƒ‡ã‚¹ã‚¯ãƒˆãƒƒãƒ—ã«ã‚·ãƒ§ãƒ¼ãƒˆã‚«ãƒƒãƒˆã‚’ä½œæˆ(&D)"; Flags: unchecked
 [Files]
-; ƒAƒvƒŠƒP[ƒVƒ‡ƒ“–{‘Ì
-Source: "..\bin\Release\net10.0-windows\win-x64\publish\{#MyAppExeName}"; DestDir: "{app}"; Flags: ignoreversion
-Source: "..\bin\Release\net10.0-windows\win-x64\publish\*.dll"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs
-Source: "..\bin\Release\net10.0-windows\win-x64\publish\*.json"; DestDir: "{app}"; Flags: ignoreversion
-
-; Hosted API and SignalR endpoints for each installed user.
-Source: "config.json"; DestDir: "{userappdata}\Kuiz"; DestName: "config.json"; Flags: ignoreversion
-
-; ƒŠƒ\[ƒXƒtƒ@ƒCƒ‹
-Source: "..\Resources\*"; DestDir: "{app}\Resources"; Flags: ignoreversion recursesubdirs
-
-; ƒhƒLƒ…ƒƒ“ƒg
+Source: "{#PublishDir}\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
 Source: "..\LICENSE"; DestDir: "{app}"; Flags: ignoreversion
-
-; .NET 10 Desktop Runtime ƒCƒ“ƒXƒg[ƒ‰[i“¯«j
-; ’ˆÓ: –‘O‚Éƒ_ƒEƒ“ƒ[ƒh‚µ‚Ä Installer\Dependencies\ ‚É”z’u‚µ‚Ä‚­‚¾‚³‚¢
-; ƒ_ƒEƒ“ƒ[ƒhURL: https://aka.ms/dotnet/10.0/windowsdesktop-runtime-win-x64.exe
-Source: "Dependencies\windowsdesktop-runtime-10-win-x64.exe"; DestDir: "{tmp}"; Flags: deleteafterinstall; Check: not IsDotNet10Installed
-
 [Icons]
-Name: "{group}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"
-Name: "{group}\{cm:UninstallProgram,{#MyAppName}}"; Filename: "{uninstallexe}"
-Name: "{autodesktop}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"; Tasks: desktopicon
-Name: "{userappdata}\Microsoft\Internet Explorer\Quick Launch\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"; Tasks: quicklaunchicon
-
+Name: "{group}\Kuiz"; Filename: "{app}\Kuiz.exe"
+Name: "{autodesktop}\Kuiz"; Filename: "{app}\Kuiz.exe"; Tasks: desktopicon
 [Run]
-; .NET 10 Runtime ƒCƒ“ƒXƒg[ƒ‹i•K—v‚Èê‡‚Ì‚İj
-Filename: "{tmp}\windowsdesktop-runtime-10-win-x64.exe"; Parameters: "/quiet /norestart"; StatusMsg: ".NET 10 Desktop Runtime‚ğƒCƒ“ƒXƒg[ƒ‹‚µ‚Ä‚¢‚Ü‚·..."; Flags: waituntilterminated; Check: not IsDotNet10Installed
-
-; ƒAƒvƒŠƒP[ƒVƒ‡ƒ“‹N“®
-Filename: "{app}\{#MyAppExeName}"; Description: "{cm:LaunchProgram,{#StringChange(MyAppName, '&', '&&')}}"; Flags: nowait postinstall skipifsilent
-
-[Code]
-// .NET 10 Runtime ƒ`ƒFƒbƒNi‚æ‚è³Šm‚ÈŒŸoj
-function IsDotNet10Installed: Boolean;
-var
-  ResultCode: Integer;
-  TempFile: String;
-  Lines: TArrayOfString;
-  I: Integer;
-begin
-  Result := False;
-  
-  // dotnetƒRƒ}ƒ“ƒh‚ÅŠm”F
-  TempFile := ExpandConstant('{tmp}\dotnet-check.txt');
-  
-  if Exec('cmd.exe', '/c dotnet --list-runtimes > "' + TempFile + '" 2>&1', '', SW_HIDE, ewWaitUntilTerminated, ResultCode) then
-  begin
-    if LoadStringsFromFile(TempFile, Lines) then
-    begin
-      for I := 0 to GetArrayLength(Lines) - 1 do
-      begin
-        // "Microsoft.WindowsDesktop.App 10." ‚ğŒŸõ
-        if Pos('Microsoft.WindowsDesktop.App 10.', Lines[I]) > 0 then
-        begin
-          Result := True;
-          Break;
-        end;
-      end;
-    end;
-    DeleteFile(TempFile);
-  end;
-end;
-
-function InitializeSetup(): Boolean;
-var
-  ErrorCode: Integer;
-  MsgResult: Integer;
-begin
-  Result := True;
-  
-  // .NET 10 Runtime ƒ`ƒFƒbƒN
-  if not IsDotNet10Installed then
-  begin
-    MsgResult := MsgBox('.NET 10 Desktop Runtime‚ª•K—v‚Å‚·B' + #13#10#13#10 + 
-              '‚±‚ÌƒCƒ“ƒXƒg[ƒ‰[‚É“¯«‚³‚ê‚Ä‚¢‚Ü‚·B' + #13#10 +
-              'ƒZƒbƒgƒAƒbƒv‚ğ‘±s‚µ‚Ü‚·‚©H' + #13#10#13#10 +
-              '¦ ƒCƒ“ƒ^[ƒlƒbƒgÚ‘±‚ª•K—v‚Èê‡‚ª‚ ‚è‚Ü‚·B', 
-              mbConfirmation, MB_YESNO);
-    
-    if MsgResult = IDNO then
-    begin
-      Result := False;
-    end;
-  end;
-end;
-
-procedure CurStepChanged(CurStep: TSetupStep);
-begin
-  if CurStep = ssPostInstall then
-  begin
-    // ‰‰ñ‹N“®‚Ìİ’èƒtƒHƒ‹ƒ_‚ğì¬
-    // iÀÛ‚É‚ÍƒAƒvƒŠ‹N“®‚É©“®ì¬‚³‚ê‚é‚Ì‚Å•s—vj
-  end;
-end;
-
-function InitializeUninstall(): Boolean;
-begin
-  Result := True;
-  if MsgBox('Kuiz‚ğƒAƒ“ƒCƒ“ƒXƒg[ƒ‹‚µ‚Ü‚·‚©H' + #13#10 + 
-            '¦ ƒ†[ƒU[ƒf[ƒ^iƒvƒƒtƒB[ƒ‹EƒƒOj‚Ííœ‚³‚ê‚Ü‚¹‚ñB', 
-            mbConfirmation, MB_YESNO) = IDYES then
-  begin
-    Result := True;
-  end
-  else
-  begin
-    Result := False;
-  end;
-end;
+Filename: "{app}\Kuiz.exe"; Description: "Kuizã‚’èµ·å‹•ã™ã‚‹"; Flags: nowait postinstall skipifsilent

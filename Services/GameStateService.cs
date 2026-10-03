@@ -1,6 +1,8 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Security.Cryptography;
+using System.Text;
 using System.Windows.Media;
 using FuzzySharp;
 using Kuiz.Models;
@@ -8,22 +10,11 @@ using Kuiz.Models;
 namespace Kuiz.Services
 {
     /// <summary>
-    /// ƒQ[ƒ€ó‘Ô‚ÌŠÇ—‚ğ’S“–
+    /// ã‚²ãƒ¼ãƒ çŠ¶æ…‹ã®ç®¡ç†ã‚’æ‹…å½“
     /// </summary>
     public class GameStateService
     {
         private readonly Random _rand = new();
-        private readonly List<Color> _colorPalette = new()
-        {
-            (Color)ColorConverter.ConvertFromString("#FFD8BFD8"), // pastel lilac
-            (Color)ColorConverter.ConvertFromString("#FFFFD1A8"), // pastel peach
-            (Color)ColorConverter.ConvertFromString("#FFC8E6C9"), // pastel mint
-            (Color)ColorConverter.ConvertFromString("#FFFFF9C4"), // pastel yellow
-            (Color)ColorConverter.ConvertFromString("#FFBBDEFB"), // pastel blue
-            (Color)ColorConverter.ConvertFromString("#FFFFCDD2"), // pastel pink
-            (Color)ColorConverter.ConvertFromString("#FFE1BEE7"), // pastel mauve
-            (Color)ColorConverter.ConvertFromString("#FFD7CCC8")  // pastel beige
-        };
 
         // Player state
         public List<string> LobbyPlayers { get; } = new();
@@ -131,7 +122,7 @@ namespace Kuiz.Services
         }
 
         /// <summary>
-        /// ‘SŠp”¼ŠpE‘å•¶š¬•¶š‚ğ³‹K‰»
+        /// å…¨è§’åŠè§’ãƒ»å¤§æ–‡å­—å°æ–‡å­—ã‚’æ­£è¦åŒ–
         /// </summary>
         private string NormalizeAnswer(string text)
         {
@@ -139,22 +130,22 @@ namespace Kuiz.Services
             
             var normalized = text.Trim();
             
-            // ‘SŠp‰p”š‚ğ”¼Šp‚É•ÏŠ·
+            // å…¨è§’è‹±æ•°å­—ã‚’åŠè§’ã«å¤‰æ›
             var sb = new System.Text.StringBuilder();
             foreach (char c in normalized)
             {
-                // ‘SŠp‰p‘å•¶š (‚`-‚y) ¨ ”¼Šp¬•¶š (a-z)
-                if (c >= '‚O' && c <= '‚X')
+                // å…¨è§’è‹±å¤§æ–‡å­— (ï¼¡-ï¼º) â†’ åŠè§’å°æ–‡å­— (a-z)
+                if (c >= 'ï¼' && c <= 'ï¼™')
                 {
-                    sb.Append((char)(c - '‚O' + '0'));
+                    sb.Append((char)(c - 'ï¼' + '0'));
                 }
-                else if (c >= '‚`' && c <= '‚y')
+                else if (c >= 'ï¼¡' && c <= 'ï¼º')
                 {
-                    sb.Append((char)(c - '‚`' + 'a'));
+                    sb.Append((char)(c - 'ï¼¡' + 'a'));
                 }
-                else if (c >= '‚' && c <= '‚š')
+                else if (c >= 'ï½' && c <= 'ï½š')
                 {
-                    sb.Append((char)(c - '‚' + 'a'));
+                    sb.Append((char)(c - 'ï½' + 'a'));
                 }
                 else if (c >= 'A' && c <= 'Z')
                 {
@@ -173,20 +164,20 @@ namespace Kuiz.Services
         {
             if (CurrentQuestion == null) return false;
 
-            // ‘SŠp”¼ŠpE‘å•¶š¬•¶š‚ğ³‹K‰»
+            // å…¨è§’åŠè§’ãƒ»å¤§æ–‡å­—å°æ–‡å­—ã‚’æ­£è¦åŒ–
             var correctAnswer = NormalizeAnswer(CurrentQuestion.Answer ?? "");
             var userAnswer = NormalizeAnswer(answer);
             
-            // ‚Ü‚¸Š®‘Sˆê’v‚ğŠm”Fi³‹K‰»Œãj
+            // ã¾ãšå®Œå…¨ä¸€è‡´ã‚’ç¢ºèªï¼ˆæ­£è¦åŒ–å¾Œï¼‰
             bool correct = correctAnswer == userAnswer;
             
-            // Š®‘Sˆê’v‚µ‚È‚¢ê‡‚Íƒtƒ@ƒW[ƒ}ƒbƒ`ƒ“ƒO
+            // å®Œå…¨ä¸€è‡´ã—ãªã„å ´åˆã¯ãƒ•ã‚¡ã‚¸ãƒ¼ãƒãƒƒãƒãƒ³ã‚°
             if (!correct && !string.IsNullOrEmpty(correctAnswer))
             {
                 int similarity = Fuzz.Ratio(correctAnswer, userAnswer);
                 Logger.LogInfo($"Answer fuzzy match: '{answer}' -> '{userAnswer}' vs '{CurrentQuestion.Answer}' -> '{correctAnswer}' = {similarity}%");
                 
-                // 85%ˆÈã‚Ì—Ş—“x‚Å³‰ğ‚Æ”»’è
+                // 85%ä»¥ä¸Šã®é¡ä¼¼åº¦ã§æ­£è§£ã¨åˆ¤å®š
                 correct = similarity >= 85;
             }
 
@@ -228,35 +219,30 @@ namespace Kuiz.Services
 
         public Brush EnsurePlayerColor(string name)
         {
-            if (string.IsNullOrEmpty(name)) return Brushes.Gray;
-            if (PlayerColorBrushes.ContainsKey(name)) return PlayerColorBrushes[name];
-
-            // Hidden feature: players with '‚Ê' in their name get gold color
-            if (name.Contains("‚Ê"))
+            if (string.IsNullOrWhiteSpace(name)) return Brushes.Gray;
+            // Unlike Random or string.GetHashCode(), SHA-256 is stable across
+            // processes. Join order, machine and host/guest role cannot change it.
+            var hash = SHA256.HashData(Encoding.UTF8.GetBytes(name.Trim().ToUpperInvariant()));
+            var hue = ((hash[0] << 8) | hash[1]) / 65536.0 * 6;
+            const double saturation = 0.62;
+            const double lightness = 0.64;
+            var chroma = (1 - Math.Abs(2 * lightness - 1)) * saturation;
+            var secondary = chroma * (1 - Math.Abs(hue % 2 - 1));
+            var offset = lightness - chroma / 2;
+            var (red, green, blue) = (int)hue switch
             {
-                var goldBrush = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#FFD700"));
-                goldBrush.Freeze();
-                PlayerColorBrushes[name] = goldBrush;
-                return goldBrush;
-            }
-
-            var usedColors = new HashSet<Color>(
-                PlayerColorBrushes.Values
-                    .OfType<SolidColorBrush>()
-                    .Select(b => b.Color));
-
-            Color chosen;
-            var available = _colorPalette.Where(c => !usedColors.Contains(c)).ToList();
-            if (available.Count > 0)
-            {
-                chosen = available[_rand.Next(available.Count)];
-            }
-            else
-            {
-                chosen = _colorPalette[_rand.Next(_colorPalette.Count)];
-            }
-
-            var brush = new SolidColorBrush(chosen);
+                0 => (chroma, secondary, 0.0),
+                1 => (secondary, chroma, 0.0),
+                2 => (0.0, chroma, secondary),
+                3 => (0.0, secondary, chroma),
+                4 => (secondary, 0.0, chroma),
+                _ => (chroma, 0.0, secondary)
+            };
+            var color = Color.FromRgb((byte)Math.Round((red + offset) * 255),
+                (byte)Math.Round((green + offset) * 255), (byte)Math.Round((blue + offset) * 255));
+            if (PlayerColorBrushes.TryGetValue(name, out var cached) &&
+                cached is SolidColorBrush existing && existing.Color == color) return cached;
+            var brush = new SolidColorBrush(color);
             brush.Freeze();
             PlayerColorBrushes[name] = brush;
             return brush;
@@ -275,7 +261,7 @@ namespace Kuiz.Services
                 Score = Scores.GetValueOrDefault(p, 0),
                 Correct = Scores.GetValueOrDefault(p, 0),
                 Wrong = Mistakes.GetValueOrDefault(p, 0),
-                ColorBrush = PlayerColorBrushes.GetValueOrDefault(p) ?? EnsurePlayerColor(p),
+                ColorBrush = EnsurePlayerColor(p),
                 IsDisabled = Mistakes.GetValueOrDefault(p, 0) >= MaxMistakes
             }).ToList();
         }

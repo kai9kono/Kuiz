@@ -8,6 +8,11 @@ builder.Services.AddSignalR();
 builder.Services.AddSingleton<LobbyService>();
 builder.Logging.SetMinimumLevel(LogLevel.Warning);
 var app = builder.Build();
+var serverIndex = Array.IndexOf(args, "--server-url");
+var externalServer = serverIndex >= 0;
+var baseUrl = externalServer
+    ? args[serverIndex + 1].TrimEnd('/')
+    : "http://127.0.0.1:5187";
 app.Urls.Add("http://127.0.0.1:5187");
 app.MapHub<GameHub>("/gamehub");
 app.MapGet("/health", () => new { status = "healthy", service = "Kuiz local debug" });
@@ -18,7 +23,7 @@ app.MapGet("/api/question", () => new[]
     new { id = 3, text = "英語で猫は？", answer = "cat", author = "Debug" }
 });
 app.MapGet("/api/lobby/{code}", (string code, LobbyService service) => service.GetLobbyStateByCode(code));
-await app.StartAsync();
+if (!externalServer) await app.StartAsync();
 if (args.Contains("--serve"))
 {
     await app.WaitForShutdownAsync();
@@ -27,13 +32,13 @@ if (args.Contains("--serve"))
 
 try
 {
-    await using var host = new HubConnectionBuilder().WithUrl("http://127.0.0.1:5187/gamehub").Build();
-    await using var guest = new HubConnectionBuilder().WithUrl("http://127.0.0.1:5187/gamehub").Build();
+    await using var host = new HubConnectionBuilder().WithUrl(baseUrl + "/gamehub").Build();
+    await using var guest = new HubConnectionBuilder().WithUrl(baseUrl + "/gamehub").Build();
     await Task.WhenAll(host.StartAsync(), guest.StartAsync());
     var code = await host.InvokeAsync<string>("CreateLobby", "SmokeHost");
     Check(await guest.InvokeAsync<bool>("JoinLobby", code, "SmokeGuest"), "join lobby");
     using var http = new HttpClient();
-    var lobby = JsonDocument.Parse(await http.GetStringAsync($"http://127.0.0.1:5187/api/lobby/{code}"));
+    var lobby = JsonDocument.Parse(await http.GetStringAsync($"{baseUrl}/api/lobby/{code}"));
     Check(lobby.RootElement.GetProperty("playerCount").GetInt32() == 2, "HTTP lobby lookup has both players");
 
     var start = new TaskCompletionSource<JsonElement>(TaskCreationOptions.RunContinuationsAsynchronously);
@@ -78,7 +83,7 @@ try
     Check(await left.Task.WaitAsync(TimeSpan.FromSeconds(5)) == "SmokeGuest", "departure notification");
     Console.WriteLine("PASS: all multiplayer transport checks");
 }
-finally { await app.StopAsync(); }
+finally { if (!externalServer) await app.StopAsync(); }
 
 static void Check(bool condition, string description)
 {

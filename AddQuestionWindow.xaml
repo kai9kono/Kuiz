@@ -1,7 +1,8 @@
 <Window x:Class="Kuiz.AddQuestionWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="Add Question" Height="260" Width="600" WindowStartupLocation="CenterOwner" ResizeMode="NoResize">
+        Title="Add Question" Height="260" Width="600" WindowStartupLocation="CenterOwner" ResizeMode="NoResize"
+        FontFamily="{StaticResource AppFont}">
     <Grid Margin="12">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto" />

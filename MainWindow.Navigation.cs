@@ -11,7 +11,13 @@ namespace Kuiz
     /// </summary>
     public partial class MainWindow
     {
+        private int _panelTransitionCount;
         private async void ShowPanel(UIElement panel)
+        {
+            await ShowPanelAsync(panel);
+        }
+
+        private async Task ShowPanelAsync(UIElement panel)
         {
             Logger.LogInfo($"ShowPanel called for panel: {panel?.GetType().Name ?? "null"}");
             
@@ -65,6 +71,7 @@ namespace Kuiz
             
             bool shouldAnimateDown = 
                 (fromPanel == TitlePanel && (toPanel == HostPanel || toPanel == JoinPanel || toPanel == QuestionManagerPanel)) ||
+                (fromPanel == JoinPanel && toPanel == HostPanel) ||
                 (fromPanel == QuestionManagerPanel && (toPanel == CreateQuestionPanel || toPanel == QuestionHistoryPanel));
             
             bool shouldAnimateUp = 
@@ -84,6 +91,7 @@ namespace Kuiz
             }
             
             // Play swipe sound
+            _panelTransitionCount++;
             _soundService.PlaySwipe();
             
             // Determine direction based on transition type

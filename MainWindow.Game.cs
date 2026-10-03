@@ -26,6 +26,12 @@ namespace Kuiz
         private bool _isPreDisplay;
         private bool _correctOverlayShown;
         private bool _gameEnded;
+        private bool _isRevealingAnswer;
+        private bool _hostPreDisplay;
+        private string _answerRevealText = string.Empty;
+        private Question? _answerRevealQuestion;
+        private readonly SemaphoreSlim _answerRevealGate = new(1, 1);
+        private int _gameFlowVersion;
 
         // Answer overlay support
         private TaskCompletionSource<string?>? _answerOverlayTcs;
@@ -46,6 +52,7 @@ namespace Kuiz
             try
             {
                 if (_gameEnded || _endingGame || GamePanel.Visibility != Visibility.Visible) return;
+                if (!CanPlayerBuzz(_profileService.PlayerName ?? TxtJoinPlayerName.Text.Trim())) return;
                 if (_isPreDisplay)
                 {
                     TxtGameStatus.Text = "Please wait...";
@@ -461,7 +468,8 @@ namespace Kuiz
                 _gameState.QueuePosition++;
                 _correctOverlayShown = false; // Reset flag for new question
 
-                var question = _gameState.DequeueNextQuestion();
+                // Preserve the final question until its answer has been displayed.
+                var question = _gameState.PlayQueue.Count == 0 ? null : _gameState.DequeueNextQuestion();
                 if (question == null)
                 {
                     var winner = _gameState.GetWinner();
@@ -472,6 +480,10 @@ namespace Kuiz
                 }
 
                 // Record question to history
+                _isRevealingAnswer = false;
+                _answerRevealText = string.Empty;
+                _isPreDisplay = true;
+                Dispatcher.Invoke(() => TxtAnswerReveal.Visibility = Visibility.Collapsed);
                 _ = RecordQuestionPlayedAsync(question);
 
                 // Notify clients about next question (skip first question - clients start it in OnGameStarting)
@@ -483,6 +495,7 @@ namespace Kuiz
                 }
 
                 await ShowPreDisplayBannerAsync();
+                await BroadcastGameStateAsync();
                 StartRevealLoop();
             }
             finally
@@ -668,11 +681,12 @@ namespace Kuiz
                 }
                 else
                 {
-                    Logger.LogInfo("? Someone answered correctly during wait - skipping answer reveal");
+                    await ShowCorrectAnswerSequenceAsync(question, ct);
                 }
             }
 
             _gameState.BuzzOrder.Clear();
+            ct.ThrowIfCancellationRequested();
             if (_gameEnded || await HandleGameEndAsync())
             {
                 return;
@@ -701,15 +715,7 @@ namespace Kuiz
 
             _correctOverlayShown = false;
 
-            Dispatcher.Invoke(() =>
-            {
-                TxtAnswerReveal.Text = $"答え：{question.Answer}";
-                TxtAnswerReveal.Visibility = Visibility.Visible;
-                UpdateGameUi();
-            });
-
-            await Task.Delay(3000, ct);
-            Dispatcher.Invoke(() => TxtAnswerReveal.Visibility = Visibility.Collapsed);
+            await ShowAnswerRevealAsync(question, ct);
         }
 
         private async Task WaitForAnsweringPlayerAsync(CancellationToken ct)
@@ -733,15 +739,31 @@ namespace Kuiz
 
         private async Task ShowAnswerRevealAsync(Question question, CancellationToken ct)
         {
-            Dispatcher.Invoke(() =>
+            // Keep the final answer visible even if the reveal loop is cancelled
+            // by a winning answer. Concurrent termination paths share this hold.
+            await _answerRevealGate.WaitAsync();
+            try
             {
-                TxtAnswerReveal.Text = $"答え：{question.Answer}";
-                TxtAnswerReveal.Visibility = Visibility.Visible;
-                UpdateGameUi();
-            });
-
-            await Task.Delay(3000, ct);
-            Dispatcher.Invoke(() => TxtAnswerReveal.Visibility = Visibility.Collapsed);
+                if (ReferenceEquals(_answerRevealQuestion, question) || _gameEnded) return;
+                _answerRevealQuestion = question;
+                _isRevealingAnswer = true;
+                _answerRevealText = question.Answer ?? string.Empty;
+                _gameState.RevealedText = question.Text ?? string.Empty;
+                _gameState.PausedForBuzz = false;
+                _gameState.BuzzOrder.Clear();
+                Dispatcher.Invoke(() =>
+                {
+                    HideOverlay();
+                    HideAnsweringModal();
+                    TxtAnswerReveal.Text = $"答え：{_answerRevealText}";
+                    TxtAnswerReveal.Visibility = Visibility.Visible;
+                    UpdateGameUi();
+                });
+                await BroadcastGameStateAsync();
+                await Task.Delay(3000);
+                // Leave it on screen until the next question or result transition.
+            }
+            finally { _answerRevealGate.Release(); }
         }
 
         private async Task ShowNextTimerAsync(int seconds, CancellationToken ct)
@@ -921,10 +943,18 @@ namespace Kuiz
             UpdateBuzzButtonState();
         }
 
+        private bool CanPlayerBuzz(string name) =>
+            !string.IsNullOrEmpty(name) && !_gameEnded && !_endingGame &&
+            !_isPreDisplay && (_isHost || !_hostPreDisplay) && !_isRevealingAnswer && !_isAnswerDialogOpen &&
+            !_isClientAnswering && !_gameState.CorrectAnswered &&
+            !_gameState.PausedForBuzz && _gameState.BuzzOrder.Count == 0 &&
+            _gameState.Mistakes.GetValueOrDefault(name, 0) < _gameState.MaxMistakes &&
+            !_gameState.AttemptedThisQuestion.Contains(name);
+
         private void UpdateBuzzButtonState()
         {
             var myName = _profileService.PlayerName ?? TxtJoinPlayerName?.Text?.Trim() ?? string.Empty;
-            bool canBuzz = !string.IsNullOrEmpty(myName) && !_isPreDisplay;
+            bool canBuzz = CanPlayerBuzz(myName);
 
             // If player is disabled (too many mistakes) they cannot buzz
             if (_gameState.Mistakes.GetValueOrDefault(myName, 0) >= _gameState.MaxMistakes)
@@ -1060,13 +1090,6 @@ namespace Kuiz
                 return false;
             }
 
-            _revealCts?.Cancel();
-
-            if (ensureAnswerReveal && allDisqualified && _gameState.CurrentQuestion != null)
-            {
-                await ShowAnswerRevealAsync(_gameState.CurrentQuestion, CancellationToken.None);
-            }
-
             await FinishGameAsync(winner ?? "No winner");
             return true;
         }
@@ -1077,9 +1100,13 @@ namespace Kuiz
         {
             if (_gameEnded || _endingGame) return;
             _endingGame = true;
+            var flowVersion = _gameFlowVersion;
             _revealCts?.Cancel();
             try
             {
+                if (_gameState.CurrentQuestion != null)
+                    await ShowAnswerRevealAsync(_gameState.CurrentQuestion, CancellationToken.None);
+                if (_gameEnded || flowVersion != _gameFlowVersion) return;
                 // Every host termination path must publish the same final state.
                 if (_hostService.IsRunning)
                 {
@@ -1099,7 +1126,11 @@ namespace Kuiz
 
         private void ResetGameFlow()
         {
+            _gameFlowVersion++;
             _gameEnded = false;
+            _isRevealingAnswer = false;
+            _answerRevealText = string.Empty;
+            _answerRevealQuestion = null;
             _isPreDisplay = true;
             _isAnswerDialogOpen = false;
             _correctOverlayShown = false;
@@ -1239,6 +1270,8 @@ namespace Kuiz
 
         private void Window_PreviewKeyDown(object sender, KeyEventArgs e)
         {
+            // Spaces and IME input belong to the answer field while it is open.
+            if (_isAnswerDialogOpen || _isClientAnswering) return;
             // Check for both half-width and full-width space
             bool isSpacePressed = e.Key == Key.Space;
             
@@ -1266,7 +1299,7 @@ namespace Kuiz
 
                 // Prevent disabled players from using space to buzz
                 var myName = _profileService.PlayerName ?? TxtJoinPlayerName?.Text?.Trim() ?? string.Empty;
-                bool canBuzz = !string.IsNullOrEmpty(myName) && !_isPreDisplay;
+                bool canBuzz = CanPlayerBuzz(myName);
 
                 if (_gameState.Mistakes.GetValueOrDefault(myName, 0) >= _gameState.MaxMistakes)
                 {
@@ -1353,6 +1386,8 @@ namespace Kuiz
 
         private void StopGameFlow()
         {
+            _gameFlowVersion++;
+            _clientRevealCts?.Cancel();
             Logger.LogInfo("?? Stopping game flow (canceling tasks, stopping sounds)");
             
             // Cancel reveal loop
@@ -1390,5 +1425,3 @@ namespace Kuiz
         }
     }
 }
-
-

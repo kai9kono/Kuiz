@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Linq;
 using System.Net.Http;
 using System.Text;
@@ -313,7 +313,7 @@ namespace Kuiz
 
             await ShowGameStartCountdownAsync();
 
-            ShowPanel(GamePanel);
+            await ShowPanelAsync(GamePanel);
             UpdateGameUi();
 
             if (_gameState.PlayQueue.Count > 0)
@@ -522,6 +522,11 @@ namespace Kuiz
                 var gameState = new
                 {
                     revealedText = _gameState.RevealedText,
+                    preDisplay = _isPreDisplay,
+                    correctAnswered = _gameState.CorrectAnswered,
+                    revealingAnswer = _isRevealingAnswer,
+                    answerText = _answerRevealText,
+                    questionText = _gameState.CurrentQuestion?.Text ?? string.Empty,
                     scores = _gameState.Scores.ToDictionary(kv => kv.Key, kv => kv.Value),
                     mistakes = _gameState.Mistakes.ToDictionary(kv => kv.Key, kv => kv.Value),
                     buzzOrder = _gameState.BuzzOrder.ToList(),

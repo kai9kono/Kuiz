@@ -7,6 +7,8 @@
             <ResourceDictionary.MergedDictionaries>
                 <ResourceDictionary Source="/Resources/MaterialResources.xaml" />
             </ResourceDictionary.MergedDictionaries>
+            <FontFamily x:Key="AppFont">Yu Gothic UI, Segoe UI</FontFamily>
+            <FontFamily x:Key="MaterialDesignFont">Yu Gothic UI, Segoe UI</FontFamily>
         </ResourceDictionary>
     </Application.Resources>
 </Application>
