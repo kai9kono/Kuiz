@@ -4,6 +4,8 @@ Windows x64版 v1.0.3。ユーザーの指示により Yu Gothic UI / Segoe UI �
 
 ## 配布先
 
+- 公開サイト: https://kuiz-download.kai9kono.chatgpt.site
+- v1.0.3: https://github.com/kai9kono/Kuiz/releases/tag/v1.0.3
 - サイトID: `appgprj_6ac0863b31208191baa569bfb86ecbd2`
 - サイト作業場所: このリポジトリの `DownloadSite`（Sites管理の独立したGitリポジトリ）
 - インストーラー: 公開GitHubリポジトリ `kai9kono/Kuiz` の Releases
@@ -20,6 +22,7 @@ Windows x64版 v1.0.3。ユーザーの指示により Yu Gothic UI / Segoe UI �
 - 本体と.NET Desktop Runtimeを一緒に収録するself-contained形式を使用。
 - 同じファイルを収録した検証用インストーラー（AppIdと出力名のみ分離）で、インストール、417ファイルのハッシュ照合、タイトル画面の起動、上書き更新、削除を確認。既存1.0.1のインストール登録を保持した。
 - インストーラーはコード署名なし。別のWindows PCや.NET未導入のクリーンVMでの確認は未実施。
+- 公開済みEXEをダウンロードし、ローカルEXEと公開SHA-256が一致することを確認。SHA-256: `4da6d8b544758696eaeca6d9cd7fc07c931d89f81a86dc62a617cb7440371fdd`。
 - 元々の回帰確認はUI状態を設定するテストであり、実際のキー入力・全問題の正誤判定を網羅するものではない。
 
 ## 次回の更新
@@ -35,6 +38,8 @@ Windows x64版 v1.0.3。ユーザーの指示により Yu Gothic UI / Segoe UI �
 7. `Installer/Prepare-DownloadSite.ps1 -Version <version>` で公開アセットを確認し、同じサイトのrelease.jsonを更新する。
 8. sites-building/sites-hostingスキルで同じSiteを開き、DownloadSiteの最新sourceを同期・公開する。新しいSiteを作らない。公開成功のURLを確認する。
 9. 公開アセットをダウンロードしてSHA-256を照合する。
+
+WindowsでSitesの配布アーカイブを作る時は、実行プロセスのPATHに `C:\Program Files\Git\bin` を追加し、`TAR_OPTIONS=--force-local` を設定する。bundled site-workflowを使い、認証情報は標準入力だけで渡す。
 
 ## 初期問題
 

@@ -381,3 +381,4 @@ FodyWeavers.xsd
 
 # Sites keeps the download page in its own repository
 /DownloadSite/
+/Installer/*.sha256
